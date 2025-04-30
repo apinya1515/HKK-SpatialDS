@@ -1,8 +1,8 @@
-# HKK-SpatialDS
-HKK Spatial Distance Sampling 
+# Introduction 
 
-## the project by Apinya
+This code line are used to run spatial hierarchical distance sampling model developed
+by Dr N Samba Kumar. 
 
-first step
-
+Currently this project is using to estimated the spatial variation in the abundance 
+of ungulates in  HKK, Thailand. 
 
