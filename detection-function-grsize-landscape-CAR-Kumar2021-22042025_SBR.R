@@ -12,7 +12,7 @@
 ### Change prior of sigma0 to lognormal to allow larger values
 
 library(nimble) ## this on code can call nimble package
-library(dplyr)  ## this code can call dplyr
+library(dplyr) 
 library(coda) # for post-training mcmc check 
 library(MCMCvis)
 library(sf) # for import spatial data
