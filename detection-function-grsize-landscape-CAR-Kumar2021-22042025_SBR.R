@@ -11,7 +11,7 @@
 ### Calculate cumulative prob at largest ditance (F_dist_limit[k]) and normalized other distance class with this
 ### Change prior of sigma0 to lognormal to allow larger values
 
-library(nimble)
+library(nimble) ## this on code can call nimble package
 library(dplyr)
 library(coda) # for post-training mcmc check 
 library(MCMCvis)
