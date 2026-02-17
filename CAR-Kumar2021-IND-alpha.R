@@ -51,7 +51,7 @@ distanceModelCode <- nimbleCode({
   muc ~ dunif(1, gs_max) # universal average cluster size (for truncated-Poisson)
   #sigma0 ~ dunif(1, 10) # sigma0 # try larger prior to avoid -Inf logProb error
   sigma0 ~ dunif(0.5, 10)  # ***larger values - to prevent too low logProb (less than -1e12)
-  p ~ dunif(0.0001, 5) # model parameter for sigma ~ group_size
+  p ~ dunif(0, 5) # model parameter for sigma ~ group_size
   
   # CAR priors
   sigma_spatial ~ dunif(0, 5) # standard deviation prior
@@ -76,6 +76,7 @@ distanceModelCode <- nimbleCode({
   for (i in 1:I) { # Loop through each transect
     # change function so that lam = nrep * (prop*lam)
     # then, log(lam) = log(nrep) + log(prop*z) ### nrepis number of rep
+    # Z[i] = transect-level abundance
     Z[i] <- inprod(propM[i,1:L], z[1:L]) # proportionated abundance of transect based on overlapped grid
     log(lam[i]) <- log(nrep) + log(Z[i]) + alpha # multiply abundance (z) of each grid with proportion that each grid contribute to the transect
   }
@@ -162,6 +163,5 @@ distanceModelCode <- nimbleCode({
 })
 
 # Tracked variables' names
-tracked_var <- c("sigma", "p", "muc", "gs_k", "sigma0", "pi", "fix_z", 'z', 'Z', 'lam',
-                 'beta', 'w', 'alpha', 'tau', 'fix_z', 'b_spatial', 'AGS', 'ABUND', 
-                 'TOTAL_ABUND')
+tracked_var <- c("sigma", "p", "muc", "gs_k", "sigma0", "pi",
+                 'beta', 'w', 'alpha', 'b_spatial', 'AGS', 'TOTAL_ABUND')
