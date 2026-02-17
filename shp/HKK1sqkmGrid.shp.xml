@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata xml:lang="en"><Esri><CreaDate>20241225</CreaDate><CreaTime>18130600</CreaTime><ArcGISFormat>1.0</ArcGISFormat><SyncOnce>TRUE</SyncOnce><DataProperties><lineage><Process ToolSource="c:\program files (x86)\arcgis\desktop10.8\ArcToolbox\Toolboxes\Data Management Tools.tbx\CreateFishnet" Date="20241218" Time="161400">CreateFishnet D:\2024SpatialDistance\Covariate\1kmGrid.shp "498310.2461 1656080.5997" "498310.2461 1656090.5997" 1000 1000 92 52 # LABELS slope_CV.tif POLYGON</Process></lineage></DataProperties></Esri></metadata>
