@@ -55,7 +55,7 @@ distanceModelCode <- nimbleCode({
   
   # CAR priors
   sigma_spatial ~ dunif(0, 5) # standard deviation prior
-  tau ~ 1/sigma_spatial^2 # precision param for spatial CAR
+  tau <- 1/sigma_spatial^2 # precision param for spatial CAR
   weights[1:njoin] <- 1 # weight of all spatial joins = 1
   b_spatial[1:L] ~ dcar_normal(adj = adj[1:njoin], weights = weights[1:njoin], 
                                num = num[1:L], tau = tau, zero_mean = 0) # random spatial effect (intercept) intercept for each grid
@@ -80,7 +80,6 @@ distanceModelCode <- nimbleCode({
     log(lam[i]) <- log(nrep) + log(Z[i]) + alpha # multiply abundance (z) of each grid with proportion that each grid contribute to the transect
   }
   
-  
   ### Modeling prob for each group size cateogory
   for(m in 1:gs_max) { # loop through every group size
     #!!!## Array storing probability mass function (PMF) values for the Poisson distribution. 
@@ -90,19 +89,20 @@ distanceModelCode <- nimbleCode({
     #!!!## summandForMean[m] = m*summand[m] = m*(muc^m)/m! = (muc^m)/(m-1)!
     summandForMean[m] <- m * summand[m]
   }
+  C_ztp <- sum(summand[1:gs_max]) # The sum of unnormalized probabilities
 
   ### calculate prob of each group size class & mean group size for each class
   # gs_k[k] = probability that animal cluster is size category k
   # gs_k_mean[k] = mean cluster size of size category k
   if(gsBreaks[1] == 1){ # if first distance category breaks is 1
-    gs_k[1] <- exp(-muc) / (1 - exp(-muc)) * summand[1] # prob for category 1
+    gs_k[1] <- summand[1] / C_ztp # prob for category 1
     gs_k_mean[1] <- summandForMean[1] / summand[1]
   } else { # else if first distance category breaks is >= 2
-    gs_k[1] <- exp(-muc) / (1 - exp(-muc)) * sum(summand[1:gsBreaks[1]]) # prob for category 1
+    gs_k[1] <- sum(summand[1:gsBreaks[1]]) / C_ztp # prob for category 1
     gs_k_mean[1] <- sum(summandForMean[1:gsBreaks[1]]) / sum(summand[1:gsBreaks[1]])
   }
   for (k in 2:K) { # prob for group category >= 2
-    gs_k[k] <- exp(-muc) / (1 - exp(-muc)) * sum(summand[(gsBreaks[k-1]+1):(gsBreaks[k])])
+    gs_k[k] <- sum(summand[(gsBreaks[k-1]+1):(gsBreaks[k])]) / C_ztp
     gs_k_mean[k] <- sum(summandForMean[(gsBreaks[k-1]+1):(gsBreaks[k])]) / sum(summand[(gsBreaks[k-1]+1):(gsBreaks[k])])
   }
   

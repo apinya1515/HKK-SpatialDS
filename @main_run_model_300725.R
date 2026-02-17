@@ -39,16 +39,16 @@ data_tr <- read.table('D:\\UserData\\Dropbox\\@KU_pop_course\\day1_exercise\\lin
 #data_tr$Tr.no <- paste0(data_tr$Tr.no,'-',data_tr$Walk.no)
 
 # shapefile of study area grid
-poly <- st_read('D:\\UserData\\KUDrive\\@Projects\\HKK_Line_Transect\\shp\\HKK1sqkmGrid.shp')
+poly <- st_read('shp\\HKK1sqkmGrid.shp')
 poly$ID <- seq(1:nrow(poly))  # define ID directly to data instead
 plot(poly)
 
 # landscape data
-data_land_orig <- read.csv('D:\\UserData\\KUDrive\\@Projects\\HKK_Line_Transect\\HKK_Cov1sqkm_.csv')
+data_land_orig <- read.csv('HKK_Cov1sqkm_.csv')
 data_land <- data_land_orig[,c('grid_id', 'dist_str', 'ndvi_med', 'ndvi_cv', 'elev', 'slope', 'BB', 'DD', 'DE', 'HE')]
 
 # transect X landscape data
-data_prop <- read.csv('D:\\UserData\\KUDrive\\@Projects\\HKK_Line_Transect\\TRidentity.csv')
+data_prop <- read.csv('TRidentity.csv')
 
 ###########################################################################################
 ########################## INITIALIZATION ####################################
@@ -67,13 +67,13 @@ dist_class_n <- 5 # number of dist classes
 path <- 'D:/UserData/KUDrive/@Projects/HKK_Line_Transect/'
 
 ### Call data preparation
-source(paste0(path, '@data_prepare_011025.R'))
+source('@data_prepare_011025.R')
 
 ### *****Call model file*****
 ## Model with indicator
 #source(paste0(path, 'model-detection-function-grsize-landscape-CAR-Kumar2021-30092025.R'))
 ## Model without indicator
-source(paste0(path, 'model-CAR-Kumar2021-11112025-W_INDICATOR-no_site_level.R'))
+source('CAR-Kumar2021-IND-alpha.R')
 
 ####################################################################################
 
@@ -106,8 +106,8 @@ Cmcmc <- compileNimble(distanceMCMC, project = distanceModel)
 ###################################################################################################
 # Run the MCMC
 t_start <- Sys.time() # start time
-samples_chains <- runMCMC(Cmcmc, niter = 25000, nburnin = 5000, thin = 2, nchains = 2, WAIC=TRUE,
-                          setSeed = c(999, 111))
+samples_chains <- runMCMC(Cmcmc, niter = 250000, nburnin = 25000, thin = 2, nchains = 3, WAIC=TRUE,
+                          setSeed = c(999, 111, 555))
 (t_elapse <- Sys.time() - t_start) # time elapse
 ###summary(samples_chains)
 
