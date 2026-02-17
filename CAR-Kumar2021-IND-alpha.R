@@ -168,4 +168,4 @@ distanceModelCode <- nimbleCode({
 
 # Tracked variables' names
 tracked_var <- c("sigma", "p", "muc", "gs_k", "sigma0", "pi",
-                 'beta', 'w', 'alpha', 'spatial_z', 'AGS', 'TOTAL_ABUND')
+                 'beta', 'w', 'alpha', 'AGS', 'TOTAL_ABUND')
