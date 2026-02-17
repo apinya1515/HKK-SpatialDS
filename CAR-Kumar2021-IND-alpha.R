@@ -42,13 +42,14 @@
 distanceModelCode <- nimbleCode({
   ##### Priors #####
   for(i in 1:n_covar){ # Loop through covariates to create priors for coefficients (beta) and indicator (w)
-    beta[i] ~ dunif(-15, 15) # priors of landscape var regression coefficient
+    beta[i] ~ dnorm(0, sd = 5) # priors of landscape var regression coefficient
     w[i] ~ dbern(0.5) # priors of binary indicator for each coefficient
   }
-  # intercept of regression for fixed effect z (abundance)
-  beta0 ~ dunif(-15, 15)
-  # Site(transect)-specific effect on abundance
-  alpha ~ dunif(-10, 10)
+  # Global Intercept of regression for fixed effect z (fix_z)
+  beta0 ~ dnorm(0, sd = 5)
+  # Random Effect Variance (The magnitude of transect-level noise)
+  sigma_alpha ~ dunif(0, 5)   # Standard deviation of the random effect
+  tau_alpha <- 1/(sigma_alpha^2)
 
   muc ~ dunif(1, gs_max) # universal average cluster size (for truncated-Poisson)
   #sigma0 ~ dunif(1, 10) # sigma0 # try larger prior to avoid -Inf logProb error
@@ -78,9 +79,10 @@ distanceModelCode <- nimbleCode({
   for (i in 1:I) { # Loop through each transect
     # change function so that lam = nrep * (prop*lam)
     # then, log(lam) = log(nrep) + log(prop*z) ### nrepis number of rep
-    # Z[i] = transect-level abundance
-    Z[i] <- inprod(propM[i,1:L], z[1:L]) # proportionated abundance of transect based on overlapped grid
-    log(lam[i]) <- log(nrep) + log(Z[i]) + alpha # multiply abundance (z) of each grid with proportion that each grid contribute to the transect
+    # z_site[i] = transect-level abundance
+    z_site[i] <- inprod(propM[i,1:L], z[1:L]) # proportionated abundance of transect based on overlapped grid
+    alpha[i] ~ dnorm(0, tau = tau_alpha) # Draw the random effect for this specific site
+    log(lam[i]) <- log(nrep) + log(z_site[i]) + alpha[i] # multiply abundance (z) of each grid with proportion that each grid contribute to the transect
   }
   
   ### Modeling prob for each group size cateogory

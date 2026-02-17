@@ -84,9 +84,9 @@ constants <- list(nrep = nrep, I = tran_n, J = dist_class_n,
                   adj = adj, num = num, njoin = njoin,
                   logFactorial=logFactorial)
 data <- list(y = y_matrix, covar = covar, propM = propM)
-inits <- list(muc = runif(1, 1, gs_max), sigma0 = runif(1, 2, 5), p = runif(1, 1, 5), 
-              tau = runif(1,0.5,1), beta = rnorm(ncol(covar), 1,2), 
-              b_spatial = runif(grid_n, 0, 0.1), w = rep(1, ncol(covar)))
+inits <- list(muc = runif(1, 1, gs_max), sigma0 = runif(1, 2, 5), p = 0, 
+              tau = runif(1,0.5,1), beta0 = 0,beta = rnorm(ncol(covar), 1,2), 
+              spatial_z = runif(grid_n, 0, 0.1), w = rep(1, ncol(covar)))
 
 #saveRDS(constants, 'constants.RDS')
 #saveRDS(data, 'data.RDS')
@@ -95,7 +95,8 @@ inits <- list(muc = runif(1, 1, gs_max), sigma0 = runif(1, 2, 5), p = runif(1, 1
 
 # Build the model
 distanceModel <- nimbleModel(code = distanceModelCode, constants = constants, data = data, inits = inits)
-#distanceModel <- nimbleModel(code = distanceModelCode, constants = constants, data = data)
+# see initialization
+distanceModel$initializeInfo()
 
 # Configure and compile the MCMC
 mcmcConf <- configureMCMC(distanceModel, monitors = tracked_var, enableWAIC = TRUE)
@@ -106,7 +107,7 @@ Cmcmc <- compileNimble(distanceMCMC, project = distanceModel)
 ###################################################################################################
 # Run the MCMC
 t_start <- Sys.time() # start time
-samples_chains <- runMCMC(Cmcmc, niter = 250000, nburnin = 25000, thin = 2, nchains = 3, WAIC=TRUE,
+samples_chains <- runMCMC(Cmcmc, niter = 30000, nburnin = 3000, thin = 2, nchains = 3, WAIC=TRUE,
                           setSeed = c(999, 111, 555))
 (t_elapse <- Sys.time() - t_start) # time elapse
 ###summary(samples_chains)
