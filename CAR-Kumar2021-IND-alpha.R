@@ -45,6 +45,8 @@ distanceModelCode <- nimbleCode({
     beta[i] ~ dunif(-15, 15) # priors of landscape var regression coefficient
     w[i] ~ dbern(0.5) # priors of binary indicator for each coefficient
   }
+  # intercept of regression for fixed effect z (abundance)
+  beta0 ~ dunif(-15, 15)
   # Site(transect)-specific effect on abundance
   alpha ~ dunif(-10, 10)
 
@@ -57,7 +59,7 @@ distanceModelCode <- nimbleCode({
   sigma_spatial ~ dunif(0, 5) # standard deviation prior
   tau <- 1/sigma_spatial^2 # precision param for spatial CAR
   weights[1:njoin] <- 1 # weight of all spatial joins = 1
-  b_spatial[1:L] ~ dcar_normal(adj = adj[1:njoin], weights = weights[1:njoin], 
+  spatial_z[1:L] ~ dcar_normal(adj = adj[1:njoin], weights = weights[1:njoin], 
                                num = num[1:L], tau = tau, zero_mean = 0) # random spatial effect (intercept) intercept for each grid
   
   ##### Model #####
@@ -65,10 +67,10 @@ distanceModelCode <- nimbleCode({
   ### Landscape abundance for each grid
   w_beta[1:n_covar] <- w[1:n_covar] * beta[1:n_covar] # weights * coefficients
   for(l in 1:L) { # Loop trough each (of all) grid
-    # Regression for mean abundance with b_spatial(CAR elements)
+    # Regression for mean abundance with spatial_z(CAR elements)
     # z = grid-level abundance
-    fix_z[l] <- inprod(covar[l, 1:n_covar], w_beta[1:n_covar]) # regression for grid-level mean abundance
-    log(z[l]) <- fix_z[l] + b_spatial[l] # log(mean abundance) as sum of fixed effect and spatial random effect
+    fix_z[l] <- beta0 + inprod(covar[l, 1:n_covar], w_beta[1:n_covar]) # regression for grid-level mean abundance
+    log(z[l]) <- fix_z[l] + spatial_z[l] # log(mean abundance) as sum of fixed effect and spatial random effect
   }
   
   ### Abundance at each transect
@@ -164,4 +166,4 @@ distanceModelCode <- nimbleCode({
 
 # Tracked variables' names
 tracked_var <- c("sigma", "p", "muc", "gs_k", "sigma0", "pi",
-                 'beta', 'w', 'alpha', 'b_spatial', 'AGS', 'TOTAL_ABUND')
+                 'beta', 'w', 'alpha', 'spatial_z', 'AGS', 'TOTAL_ABUND')
