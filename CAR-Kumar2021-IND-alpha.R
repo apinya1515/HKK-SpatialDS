@@ -46,15 +46,16 @@ distanceModelCode <- nimbleCode({
     w[i] ~ dbern(0.5) # priors of binary indicator for each coefficient
   }
   # Site(transect)-specific effect on abundance
-  alpha ~ dunif(-2, 2)
+  alpha ~ dunif(-10, 10)
 
   muc ~ dunif(1, gs_max) # universal average cluster size (for truncated-Poisson)
   #sigma0 ~ dunif(1, 10) # sigma0 # try larger prior to avoid -Inf logProb error
-  sigma0 ~ dunif(1, 20)  # ***larger values - to prevent too low logProb (less than -1e12)
-  p ~ dunif(0.1, 10) # model parameter for sigma ~ group_size
+  sigma0 ~ dunif(0.5, 10)  # ***larger values - to prevent too low logProb (less than -1e12)
+  p ~ dunif(0.0001, 5) # model parameter for sigma ~ group_size
   
   # CAR priors
-  tau ~ dgamma(0.001, 0.001) # precision param for spatial CAR
+  sigma_spatial ~ dunif(0, 5) # standard deviation prior
+  tau ~ 1/sigma_spatial^2 # precision param for spatial CAR
   weights[1:njoin] <- 1 # weight of all spatial joins = 1
   b_spatial[1:L] ~ dcar_normal(adj = adj[1:njoin], weights = weights[1:njoin], 
                                num = num[1:L], tau = tau, zero_mean = 0) # random spatial effect (intercept) intercept for each grid
@@ -89,6 +90,7 @@ distanceModelCode <- nimbleCode({
     #!!!## summandForMean[m] = m*summand[m] = m*(muc^m)/m! = (muc^m)/(m-1)!
     summandForMean[m] <- m * summand[m]
   }
+
   ### calculate prob of each group size class & mean group size for each class
   # gs_k[k] = probability that animal cluster is size category k
   # gs_k_mean[k] = mean cluster size of size category k
@@ -152,7 +154,7 @@ distanceModelCode <- nimbleCode({
   # abundance for each grid
   ###ABUND[1:L] <- z[1:L] * AGS
   for(l in 1:L){
-    ABUND[l] <- z[l] * AGS # generate abundance for each grid from Poisson distn with z 
+    ABUND[l] <- z[l] * AGS # Expected abundance from Poisson distn with z 
   }
   # Total abundance
   TOTAL_ABUND <- sum(ABUND[1:L])
