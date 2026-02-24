@@ -125,8 +125,8 @@ samples_chains <- runMCMC(Cmcmc, niter = 30000, nburnin = 3000, thin = 2, nchain
 ################################################
 
 ### SAVE MODEL TO RDS files (So you dont have to run the same model again)
-saveRDS(samples_chains, 'D:\\UserData\\KUDrive\\@Projects\\HKK_Line_Transect\\Model_271125_25000.rds')
-samples_chains <- readRDS('D:\\UserData\\KUDrive\\@Projects\\HKK_Line_Transect\\Model_261125_25000.rds')
+saveRDS(samples_chains, 'Model_sample.rds')
+samples_chains <- readRDS('Model_sample.rds')
 #samples_chains <- readRDS("D:/Model_SBR_HKKcut20000burn15000.rds")
 ####################################################################################################
 
