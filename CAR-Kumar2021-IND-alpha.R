@@ -48,7 +48,7 @@ distanceModelCode <- nimbleCode({
   # Global Intercept of regression for fixed effect z (fix_z)
   beta0 ~ dnorm(0, sd = 5)
   # Random Effect Variance (The magnitude of transect-level noise)
-  sigma_alpha ~ dunif(0, 5)   # Standard deviation of the random effect
+  sigma_alpha ~ dunif(0.01, 5)   # Standard deviation of the random effect
   tau_alpha <- 1/(sigma_alpha^2)
 
   muc ~ dunif(1, gs_max) # universal average cluster size (for truncated-Poisson)
@@ -179,7 +179,8 @@ constants <- list(nrep = nrep, I = tran_n, J = dist_class_n,
 data <- list(y = y_matrix, covar = covar, propM = propM)
 inits <- list(muc = runif(1, 1, gs_max), sigma0 = runif(1, 2, 5), p = 0, 
               tau = runif(1,0.5,1), beta0 = 0,beta = rnorm(ncol(covar), 1,2), 
-              spatial_z = runif(grid_n, 0, 0.1), w = rep(1, ncol(covar)))
+              spatial_z = runif(grid_n, 0, 0.1), w = rep(1, ncol(covar)),
+              sigma_alpha = 1)
 #saveRDS(constants, 'constants.RDS')
 #saveRDS(data, 'data.RDS')
 #saveRDS(inits, 'inits.RDS')
