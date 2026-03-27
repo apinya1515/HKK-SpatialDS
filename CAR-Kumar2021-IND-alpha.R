@@ -169,3 +169,17 @@ distanceModelCode <- nimbleCode({
 # Tracked variables' names
 tracked_var <- c("sigma", "p", "muc", "gs_k", "sigma0", "pi",
                  'beta', 'w', 'alpha', 'AGS', 'TOTAL_ABUND')
+
+constants <- list(nrep = nrep, I = tran_n, J = dist_class_n,
+                  K = gs_class_n, gs_max = gs_max, 
+                  L = grid_n, n_covar = ncol(covar),
+                  distBreaks = distBreaks, gsBreaks = gsBreaks,
+                  adj = adj, num = num, njoin = njoin,
+                  logFactorial=logFactorial)
+data <- list(y = y_matrix, covar = covar, propM = propM)
+inits <- list(muc = runif(1, 1, gs_max), sigma0 = runif(1, 2, 5), p = 0, 
+              tau = runif(1,0.5,1), beta0 = 0,beta = rnorm(ncol(covar), 1,2), 
+              spatial_z = runif(grid_n, 0, 0.1), w = rep(1, ncol(covar)))
+#saveRDS(constants, 'constants.RDS')
+#saveRDS(data, 'data.RDS')
+#saveRDS(inits, 'inits.RDS')

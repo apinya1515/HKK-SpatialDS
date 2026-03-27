@@ -73,25 +73,9 @@ source('@data_prepare_011025.R')
 ## Model with indicator
 #source(paste0(path, 'model-detection-function-grsize-landscape-CAR-Kumar2021-30092025.R'))
 ## Model without indicator
-source('CAR-Kumar2021-IND-alpha.R')
+source('CAR-Kumar2021-NoSpatial.R')
 
 ####################################################################################
-
-constants <- list(nrep = nrep, I = tran_n, J = dist_class_n,
-                  K = gs_class_n, gs_max = gs_max, 
-                  L = grid_n, n_covar = ncol(covar),
-                  distBreaks = distBreaks, gsBreaks = gsBreaks,
-                  adj = adj, num = num, njoin = njoin,
-                  logFactorial=logFactorial)
-data <- list(y = y_matrix, covar = covar, propM = propM)
-inits <- list(muc = runif(1, 1, gs_max), sigma0 = runif(1, 2, 5), p = 0, 
-              tau = runif(1,0.5,1), beta0 = 0,beta = rnorm(ncol(covar), 1,2), 
-              spatial_z = runif(grid_n, 0, 0.1), w = rep(1, ncol(covar)))
-
-#saveRDS(constants, 'constants.RDS')
-#saveRDS(data, 'data.RDS')
-#saveRDS(inits, 'inits.RDS')
-#saveRDS(distanceModelCode, 'distanceModelCode.RDS')
 
 # Build the model
 distanceModel <- nimbleModel(code = distanceModelCode, constants = constants, data = data, inits = inits)
@@ -291,7 +275,7 @@ abline(v=density_quant[4])
 
 # Total abundance (from within-model derived-quantities)
 total_abund <- samples[,grep("^TOTAL_ABUND", colnames(samples))]
-hist(total_abund[total_abund < 800000], breaks=200, main='Total Abundance')
+hist(total_abund[total_abund < 100000], breaks=200, main='Total Abundance')
 abline(v=median(total_abund), lty=2)
 quantile(total_abund, c(0.05, 0.25, 0.5, 0.75, 0.95))
 abline(v=quantile(total_abund, c(0.05, 0.95)), col='red', lty=2)
