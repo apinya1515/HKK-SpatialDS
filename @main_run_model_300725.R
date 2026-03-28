@@ -34,8 +34,7 @@ library(terra) # for raster export and visualization
 
 ##############################################################################################
 # Transect data (table 1)
-data_tr <- read.table('D:\\UserData\\Dropbox\\@KU_pop_course\\day1_exercise\\line_data.txt', 
-                      sep='\t', header=T)
+data_tr <- read.table('line_data.txt', sep='\t', header=T)
 #data_tr$Tr.no <- paste0(data_tr$Tr.no,'-',data_tr$Walk.no)
 
 # shapefile of study area grid
@@ -62,9 +61,6 @@ data_tr$P.dist[data_tr$P.dist > dist_limit ] <- dist_limit  # set maximum distan
 gsBreaks <- c(1, 4, 6, 8) # upper breaks group size of each gs classes - c(1, 3) -> 2 classes 1st class = 1, 2nd class >= 2, the maximum group size is 3
 dist_class_n <- 5 # number of dist classes
 ##############################################################################
-
-# Set sources path
-path <- 'D:/UserData/KUDrive/@Projects/HKK_Line_Transect/'
 
 ### Call data preparation
 source('@data_prepare_011025.R')
