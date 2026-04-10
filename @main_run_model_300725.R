@@ -87,7 +87,7 @@ Cmcmc <- compileNimble(distanceMCMC, project = distanceModel)
 ###################################################################################################
 # Run the MCMC
 t_start <- Sys.time() # start time
-samples_chains <- runMCMC(Cmcmc, niter = 30000, nburnin = 3000, thin = 2, nchains = 3, WAIC=TRUE,
+samples_chains <- runMCMC(Cmcmc, niter = 200000, nburnin = 20000, thin = 4, nchains = 3, WAIC=TRUE,
                           setSeed = c(999, 111, 555))
 (t_elapse <- Sys.time() - t_start) # time elapse
 ###summary(samples_chains)
@@ -174,6 +174,7 @@ w <- samples[,grep("^w", colnames(samples))]
 colnames(w) <- colnames(covar)
 w_prop <- colSums(w)/nrow(w)
 barplot(w_prop)
+
 # plot beta that w has value at least 10% of 1
 beta_w <- beta[,w_prop > 0.3]
 boxplot(beta_w, outline=F)
@@ -271,7 +272,7 @@ abline(v=density_quant[4])
 
 # Total abundance (from within-model derived-quantities)
 total_abund <- samples[,grep("^TOTAL_ABUND", colnames(samples))]
-hist(total_abund[total_abund < 100000], breaks=200, main='Total Abundance')
+hist(total_abund[total_abund < 10000], breaks=200, main='Total Abundance')
 abline(v=median(total_abund), lty=2)
 quantile(total_abund, c(0.05, 0.25, 0.5, 0.75, 0.95))
 abline(v=quantile(total_abund, c(0.05, 0.95)), col='red', lty=2)
@@ -280,3 +281,4 @@ abline(v=quantile(total_abund, c(0.05, 0.95)), col='red', lty=2)
 sum(abun_med)
 sum(abun_upper)
 sum(abun_lower)
+
