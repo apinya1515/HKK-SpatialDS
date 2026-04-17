@@ -54,8 +54,8 @@ data_prop <- read.csv('TRidentity.csv')
 ### Input parameters
 species <- 'BTG'
 # visualize data
-discrete.hist(data_tr[data_tr$Species==species,]$Gz.sz, main='Grp size')
-hist(data_tr[data_tr$Species==species,]$P.dist, main='Distance')
+discrete.hist(data_tr[data_tr$Species==species,]$Gz.sz, main='Grp size', xlab='Group Size')
+hist(data_tr[data_tr$Species==species,]$P.dist, main='Distance', xlab='Distance', breaks=10)
 
 nrep <- 10 # number of replications for each transect
 dist_limit <- 100 # max observed distance
@@ -107,8 +107,8 @@ samples_chains <- runMCMC(Cmcmc, niter = 150000, nburnin = 100000, thin = 2, nch
 ################################################
 
 ### SAVE MODEL TO RDS files (So you dont have to run the same model again)
-saveRDS(samples_chains, 'Model_sample.rds')
-samples_chains <- readRDS('Model_sample.rds')
+saveRDS(samples_chains, 'Banteng_FullModel.rds')
+samples_chains <- readRDS('Banteng_FullModel.rds')
 #samples_chains <- readRDS("D:/Model_SBR_HKKcut20000burn15000.rds")
 ####################################################################################################
 
