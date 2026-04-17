@@ -37,7 +37,6 @@ library(arm)
 # Transect data (table 1)
 data_tr <- read.table('line_data.txt', sep='\t', header=T)
 #data_tr$Tr.no <- paste0(data_tr$Tr.no,'-',data_tr$Walk.no)
-discrete.histogram(data_tr$Gz.sz, freq=T)
 
 # shapefile of study area grid
 poly <- st_read('shp\\HKK1sqkmGrid.shp')
@@ -54,12 +53,14 @@ data_prop <- read.csv('TRidentity.csv')
 ########################## INITIALIZATION ####################################
 ### Input parameters
 species <- 'BTG'
-# hist(data_tr[data_tr$Species==species,]$P.dist, main='Perp. Distance', breaks=10)
-# hist(data_tr[data_tr$Species==species,]$Gz.sz, main='Grp size')
+# visualize data
+discrete.hist(data_tr[data_tr$Species==species,]$Gz.sz, main='Grp size')
+hist(data_tr[data_tr$Species==species,]$P.dist, main='Distance')
+
 nrep <- 10 # number of replications for each transect
 dist_limit <- 100 # max observed distance
 data_tr$P.dist[data_tr$P.dist > dist_limit ] <- dist_limit  # set maximum distance to the limit
-gsBreaks <- c(1, 2, 5, 10, 30) # upper breaks group size of each gs classes - c(1, 3) -> 2 classes 1st class = 1, 2nd class >= 2, the maximum group size is 3
+gsBreaks <- c(1, 2, 3, 4, 8) # upper breaks group size of each gs classes - c(1, 3) -> 2 classes 1st class = 1, 2nd class >= 2, the maximum group size is 3
 dist_class_n <- 5 # number of dist classes
 ##############################################################################
 
