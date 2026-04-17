@@ -44,7 +44,12 @@ poly$ID <- seq(1:nrow(poly))  # define ID directly to data instead
 plot(poly)
 # landscape data extracted to each grid
 data_land_orig <- read.csv('HKK_Cov1sqkm_.csv')
-data_land <- data_land_orig[,c('grid_id', 'dist_str', 'ndvi_med', 'ndvi_cv', 'elev', 'slope', 'BB', 'DD', 'DE', 'HE')]
+
+### Covariates for model
+#data_land <- data_land_orig[,c('grid_id', 'dist_str', 'ndvi_med', 'ndvi_cv', 'elev', 'slope', 'BB', 'DD', 'DE', 'HE')]
+data_land <- data_land_orig[,c('grid_id', 'dist_str', 'ndvi_cv', 'elev', 'slope', 'BB', 'DD', 'DE')]
+
+
 # transect X landscape data
 # Show how long each transect overlap to each grid
 data_prop <- read.csv('TRidentity.csv')
@@ -107,7 +112,7 @@ samples_chains <- runMCMC(Cmcmc, niter = 150000, nburnin = 100000, thin = 2, nch
 ################################################
 
 ### SAVE MODEL TO RDS files (So you dont have to run the same model again)
-saveRDS(samples_chains, 'Banteng_FullModel.rds')
+saveRDS(samples_chains, 'Banteng_Model_dist_str_ndvi_cv_elev_slope_BB_DD_DE.rds')
 samples_chains <- readRDS('Banteng_FullModel.rds')
 #samples_chains <- readRDS("D:/Model_SBR_HKKcut20000burn15000.rds")
 ####################################################################################################
@@ -122,7 +127,7 @@ samples_chains <- readRDS('Banteng_FullModel.rds')
 mcmc.list <- as.mcmc.list(lapply(samples_chains$samples, as.mcmc))
 # Filter parameters with prefixes "beta", "sigma", "w", and "muc"
 param_names <- colnames(mcmc.list[[1]])
-selected_params <- param_names[grep("^(beta|sigma|w|muc)", param_names)]
+selected_params <- param_names[grep("^(beta|sigma|muc)", param_names)]
 colnames(covar) # see covariates names
 # Subset mcmc.list to include only selected parameters
 sub_mcmc.list <- mcmc.list[, selected_params, drop = FALSE]
@@ -272,6 +277,7 @@ density_quant
 abline(v=density_quant[1], lty=2);abline(v=density_quant[7], lty=2)
 abline(v=density_quant[4])
 
+############################################################################
 # Total abundance (from within-model derived-quantities)
 total_abund <- samples[,grep("^TOTAL_ABUND", colnames(samples))]
 hist(total_abund[total_abund < 10000], breaks=200, main='Total Abundance')
@@ -283,4 +289,5 @@ abline(v=quantile(total_abund, c(0.05, 0.95)), col='red', lty=2)
 sum(abun_med)
 sum(abun_upper)
 sum(abun_lower)
+
 

@@ -165,7 +165,7 @@ constants <- list(nrep = nrep, I = tran_n, J = dist_class_n,
                   logFactorial=logFactorial)
 data <- list(y = y_matrix, covar = covar, propM = propM)
 inits <- list(muc = runif(1, 1, gs_max), sigma0 = runif(1, 2, 5), p = 0, 
-              tau = runif(1,0.5,1), beta0 = 0,beta = rnorm(ncol(covar), 1,2), 
+              beta0 = 0,beta = rnorm(ncol(covar), 1,2), 
               w = rep(1, ncol(covar)))
 #saveRDS(constants, 'constants.RDS')
 #saveRDS(data, 'data.RDS')
