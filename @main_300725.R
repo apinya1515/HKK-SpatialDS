@@ -31,22 +31,23 @@ library(MCMCvis)
 library(sf) # for import spatial data
 library(spdep) # for defining spatial neighbors (used for CAR)
 library(terra) # for raster export and visualization
+library(arm)
 
 ##############################################################################################
 # Transect data (table 1)
 data_tr <- read.table('line_data.txt', sep='\t', header=T)
 #data_tr$Tr.no <- paste0(data_tr$Tr.no,'-',data_tr$Walk.no)
+discrete.histogram(data_tr$Gz.sz, freq=T)
 
 # shapefile of study area grid
 poly <- st_read('shp\\HKK1sqkmGrid.shp')
 poly$ID <- seq(1:nrow(poly))  # define ID directly to data instead
 plot(poly)
-
-# landscape data
+# landscape data extracted to each grid
 data_land_orig <- read.csv('HKK_Cov1sqkm_.csv')
 data_land <- data_land_orig[,c('grid_id', 'dist_str', 'ndvi_med', 'ndvi_cv', 'elev', 'slope', 'BB', 'DD', 'DE', 'HE')]
-
 # transect X landscape data
+# Show how long each transect overlap to each grid
 data_prop <- read.csv('TRidentity.csv')
 
 ###########################################################################################
@@ -58,7 +59,7 @@ species <- 'BTG'
 nrep <- 10 # number of replications for each transect
 dist_limit <- 100 # max observed distance
 data_tr$P.dist[data_tr$P.dist > dist_limit ] <- dist_limit  # set maximum distance to the limit
-gsBreaks <- c(1, 4, 6, 8) # upper breaks group size of each gs classes - c(1, 3) -> 2 classes 1st class = 1, 2nd class >= 2, the maximum group size is 3
+gsBreaks <- c(1, 2, 5, 10, 30) # upper breaks group size of each gs classes - c(1, 3) -> 2 classes 1st class = 1, 2nd class >= 2, the maximum group size is 3
 dist_class_n <- 5 # number of dist classes
 ##############################################################################
 
@@ -87,7 +88,7 @@ Cmcmc <- compileNimble(distanceMCMC, project = distanceModel)
 ###################################################################################################
 # Run the MCMC
 t_start <- Sys.time() # start time
-samples_chains <- runMCMC(Cmcmc, niter = 200000, nburnin = 20000, thin = 4, nchains = 3, WAIC=TRUE,
+samples_chains <- runMCMC(Cmcmc, niter = 150000, nburnin = 100000, thin = 2, nchains = 3, WAIC=TRUE,
                           setSeed = c(999, 111, 555))
 (t_elapse <- Sys.time() - t_start) # time elapse
 ###summary(samples_chains)
