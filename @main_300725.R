@@ -127,167 +127,229 @@ samples_chains <- readRDS('Banteng_FullModel.rds')
 mcmc.list <- as.mcmc.list(lapply(samples_chains$samples, as.mcmc))
 # Filter parameters with prefixes "beta", "sigma", "w", and "muc"
 param_names <- colnames(mcmc.list[[1]])
-selected_params <- param_names[grep("^(beta|sigma|muc)", param_names)]
+selected_params <- param_names[grep("^(beta|sigma|muc|p|sigma_spatial|sigma_alpha)", param_names)]
 colnames(covar) # see covariates names
 # Subset mcmc.list to include only selected parameters
 sub_mcmc.list <- mcmc.list[, selected_params, drop = FALSE]
+
+# Diagnostics plots and summaries
 MCMCtrace(sub_mcmc.list, pdf = FALSE) # Visualize MCMC trace
-gelman.diag(sub_mcmc.list)  # R-hat (R-hat < 1.1 for convergence)
-effectiveSize(sub_mcmc.list)  # ESS (ESS 100 - 200 for convergence)
+
+# Wrap convergence diagnostic checks in tryCatch to prevent crashing on constant/non-varying nodes
+tryCatch({
+  print(gelman.diag(sub_mcmc.list))  # R-hat (R-hat < 1.1 for convergence)
+}, error = function(e) {
+  message("Warning: gelman.diag failed (often due to constant parameter chains like indicators): ", e$message)
+})
+
+print(effectiveSize(sub_mcmc.list))  # ESS (ESS 100 - 200 for convergence)
 autocorr.plot(sub_mcmc.list)  # Autocorrelation (Low Autocorrelation for convergence)
-MCMCsummary(sub_mcmc.list)  # Summary with R-hat and ESS
+print(MCMCsummary(sub_mcmc.list))  # Summary with R-hat and ESS
 
 ### merge multiple chains into 1
 samples <- do.call(rbind, samples_chains$samples)
-#samples <- samples_chains[[1]]
 
 ### Detection function parameters
-sigma_all <- samples[,grep("^sigma", colnames(samples))]
-sigma_k <- apply(sigma_all[,1:gs_class_n], 2, median)
-print(sigma_k)
-p <- median(samples[,'p'])
-p
-
-# multinomial pi
-pi_val <- apply(samples[,grep("^pi", colnames(samples))], 2, median)
-pi <- matrix(pi_val, nrow=gs_class_n, byrow = F)
-pi
-sum(pi)
-
-### Visualize pi = joint detection prob
-plot(pi[1,], type='n', xlab='Distance Class', ylab='Group Size', main='Multinomial Prob')
-for(i in 1:nrow(pi)){
-  lines(pi[i,], lty=i)
+if (any(grepl("^sigma\\[", colnames(samples)))) {
+  sigma_all <- samples[, grep("^sigma\\[", colnames(samples)), drop = FALSE]
+  sigma_k <- apply(sigma_all, 2, median)
+  print("Median sigma for each group size class:")
+  print(sigma_k)
+  p <- median(samples[, 'p'])
+  print(paste("Median p:", p))
+  
+  # multinomial pi
+  if (any(grepl("^pi\\[", colnames(samples)))) {
+    pi_val <- apply(samples[, grep("^pi\\[", colnames(samples)), drop = FALSE], 2, median)
+    pi_mat <- matrix(pi_val, nrow = gs_class_n, byrow = FALSE)
+    print("Multinomial detection probability matrix (pi):")
+    print(pi_mat)
+    print(paste("Sum of pi:", sum(pi_mat)))
+    
+    ### Visualize pi = joint detection prob
+    plot(pi_mat[1,], type = 'n', xlab = 'Distance Class', ylab = 'Joint Probability (pi)', 
+         main = 'Multinomial Detection Probability (pi) by Group Size Class',
+         ylim = c(0, max(pi_mat) * 1.1))
+    for(i in 1:nrow(pi_mat)){
+      lines(pi_mat[i,], lty = i, col = i, lwd = 2)
+    }
+    legend('topright', legend = 1:nrow(pi_mat), title = 'Group size class', lty = 1:nrow(pi_mat), col = 1:nrow(pi_mat), lwd = 2)
+  }
+  
+  # calculate and plot conditional detection prob (g(x)) given group size class
+  x_seq <- seq(0, dist_limit)
+  hp <- hist(data_sub$P.dist, main = 'Histogram of Observed Distances & Estimated Detection Functions', 
+             xlab = 'Distance', xlim = c(0, dist_limit))
+  for(i in 1:length(sigma_k)){
+    gx <- exp((-1 * x_seq^2) / (2 * sigma_k[i]^2))
+    lines(x_seq, gx * max(hp$counts), col = i, lwd = 2)
+  }
+  legend('topright', legend = 1:length(sigma_k), title = 'Group size class', col = 1:length(sigma_k), lty = 1, lwd = 2)
 }
-legend('topright', legend=1:nrow(pi), title = 'Group size class', lty=1:nrow(pi))
 
-# calculate gx (conditional detection prob given group size class)
-x_seq <- seq(0, dist_limit)
-hp <- hist(data_sub$P.dist, main='Histogram & Detection function', xlab='Distance')
-for(i in 1:length(sigma_k)){
-  gx <- exp((-1*x_seq^2)/(2*sigma_k[i]^2))
-  lines(x_seq, gx*max(hp$counts), col=i, lwd=2)
+# Beta regression coefficients
+beta_cols <- grep("^beta\\[", colnames(samples))
+if (length(beta_cols) > 0) {
+  beta <- samples[, beta_cols, drop = FALSE]
+  if (length(beta_cols) == ncol(covar)) {
+    colnames(beta) <- colnames(covar)
+  }
+  boxplot(beta, outline = FALSE, main = "Beta Regression Coefficients", las = 2, ylab = "Effect Size")
+  abline(h = 0, lty = 3, col = "red")
+  
+  # Indicator variables (variable selection)
+  w_cols <- grep("^w\\[", colnames(samples))
+  if (length(w_cols) > 0) {
+    w <- samples[, w_cols, drop = FALSE]
+    if (length(w_cols) == ncol(covar)) {
+      colnames(w) <- colnames(covar)
+    }
+    w_prop <- colSums(w) / nrow(w)
+    barplot(w_prop, main = "Inclusion Probability (w)", las = 2, ylab = "Probability", ylim = c(0, 1))
+    abline(h = 0.5, lty = 2, col = "gray")
+    
+    # Plot coefficients of variables with inclusion prob > 0.3
+    active_vars <- which(w_prop > 0.3)
+    if (length(active_vars) > 0) {
+      beta_w <- beta[, active_vars, drop = FALSE]
+      boxplot(beta_w, outline = FALSE, main = "Beta Coefficients (Inclusion > 0.3)", las = 2, ylab = "Effect Size")
+      abline(h = 0, lty = 3, col = "red")
+    }
+  }
 }
-legend('topright', legend=1:length(sigma_k), title = 'Group size class', col=1:length(sigma_k), lty=1)
 
-# Beta
-beta <- samples[,grep("^beta", colnames(samples))]
-colnames(beta) <- colnames(covar)
-boxplot(beta, outline=F)
-abline(h=0, lty=3)
+# Grid-specific spatial random effects (b_spatial or spatial_z)
+spatial_cols <- grep("^(b_spatial|spatial_z)\\[", colnames(samples))
+if (length(spatial_cols) > 0) {
+  b_spatial <- samples[, spatial_cols, drop = FALSE]
+  bspat_quant <- apply(b_spatial, 2, function(x) quantile(x, c(0.05, 0.25, 0.5, 0.75, 0.95)))
+  
+  # Plot spatial random effect distributions
+  par(mfrow = c(1, 2))
+  hist(bspat_quant[3,], main = 'Median of Spatial Random Effects (CAR)', xlab = 'Random Effect')
+  hist(bspat_quant[5,], main = 'Upper (95%) of Spatial Random Effects', xlab = 'Random Effect')
+  par(mfrow = c(1, 1))
+  
+  bspat_sd <- apply(b_spatial, 2, sd, na.rm = TRUE)
+  hist(bspat_sd, main = 'SD of Spatial Random Effects (CAR)', xlab = 'SD')
+  
+  # Spatial visualization
+  poly$bspat_med <- bspat_quant[3,]
+  plot(poly["bspat_med"], main = 'Median of Spatial Random Effects (CAR)', breaks = 'quantile')
+}
 
-### Indicator (only for model with indicators)
-w <- samples[,grep("^w", colnames(samples))]
-colnames(w) <- colnames(covar)
-w_prop <- colSums(w)/nrow(w)
-barplot(w_prop)
+# Grid-specific expected group abundance (z)
+z_cols <- grep("^z\\[", colnames(samples))
+if (length(z_cols) > 0) {
+  z <- samples[, z_cols, drop = FALSE]
+  z_quant <- apply(z, 2, function(x) quantile(x, c(0.05, 0.25, 0.5, 0.75, 0.95)))
+  
+  par(mfrow = c(2, 2))
+  hist(z_quant[3,], main = 'Median Grid Group-Abundance', xlab = 'z', breaks = 50)
+  hist(z_quant[2,], main = 'Lower (5%) Grid Group-Abundance', xlab = 'z', breaks = 50)
+  hist(z_quant[4,], main = 'Upper (95%) Grid Group-Abundance', xlab = 'z', breaks = 50)
+  hist(z_quant, main = 'All Grid Group-Abundance Quantiles', xlab = 'z', breaks = 100, xlim = c(0, max(z_quant[3,]) * 1.5))
+  par(mfrow = c(1, 1))
+  
+  z_sd <- apply(z, 2, sd, na.rm = TRUE)
+  hist(z_sd, main = 'SD of Grid Group-Abundance', xlab = 'z_sd', breaks = 50)
+  
+  poly$z_med <- z_quant[3,]
+  poly$z_upper <- z_quant[4,]
+  poly$z_lower <- z_quant[2,]
+  poly$z_sd <- z_sd
+  
+  plot(poly["z_med"], main = 'Median Grid Group Abundance (z)', breaks = 'quantile')
+  plot(poly["z_lower"], main = 'Lower (5%) Grid Group Abundance (z)', breaks = 'quantile')
+  plot(poly["z_upper"], main = 'Upper (95%) Grid Group Abundance (z)', breaks = 'quantile')
+  plot(poly["z_sd"], main = 'SD Grid Group Abundance (z)', breaks = 'quantile')
+}
 
-# plot beta that w has value at least 10% of 1
-beta_w <- beta[,w_prop > 0.3]
-boxplot(beta_w, outline=F)
-abline(h=0, lty=3)
+# Site(transect)-specific intercept (alpha)
+alpha_cols <- grep("^alpha", colnames(samples))
+if (length(alpha_cols) > 0) {
+  alpha <- samples[, alpha_cols, drop = FALSE]
+  hist(alpha, breaks = 50, main = 'Site-Specific Intercept (alpha)', xlab = 'alpha')
+}
 
-## Grid-specific spatial random effect of grid abundance (bspat)
-b_spatial <- samples[,grep("^b_spatial", colnames(samples))]
-# median of spat random effect
-bspat_quant <- apply(b_spatial, 2, function(x) quantile(x, c(0.05, 0.25, 0.5, 0.75, 0.95)))
-hist(bspat_quant[3,], main='Median of Spatial random effects (CAR)')
-hist(bspat_quant[5,], main='Upper of Spatial random effects (CAR)')
-# SD of spat random effect
-bspat_sd <- apply(b_spatial, 2, sd, na.rm = TRUE)
-hist(bspat_sd, main='SD of Spatial random effects (CAR)')
-# visualization of spatial random effect
-poly$bspat_med <- bspat_quant[3,] # Median random spatial effects
-plot(poly["bspat_med"], main='Median of spatial random effects (CAR)', breaks='quantile')
+# Site-specific proportionated grid abundance (Z)
+Z_cols <- grep("^Z\\[", colnames(samples))
+if (length(Z_cols) > 0) {
+  Z <- samples[, Z_cols, drop = FALSE]
+  hist(apply(Z, 2, median), breaks = 50, main = 'Transect Proportionated Grid Abundance (Z)', xlab = 'Z')
+}
 
-### Grid-specific fixed effect of grid group-abundance (z)
-z <- samples[,grep("^z", colnames(samples))]
-# median of fixed effect
-z_quant <- apply(z, 2, function(x) quantile(x, c(0.05, 0.25, 0.5, 0.75, 0.95)))
-hist(z_quant[3,], main='Median of grid-specific abundance', breaks=100)
-hist(z_quant[2,], main='Lower of grid-specific abundance', breaks=100)
-hist(z_quant[4,], main='Upper of grid-specific abundance', breaks=100)
-hist(z_quant, main='z', breaks=200, xlim=c(0,50))
-# SD of fixed effect
-z_sd <- apply(z, 2, sd, na.rm = TRUE)
-hist(z_sd, main='SD of grid-specific abundance', breaks=50)
-# raster visualization for z
-poly$z_med <- z_quant[3,] # median of grid abundance
-poly$z_upper <- z_quant[4,] # upper of grid abundance
-poly$z_lower <- z_quant[2,] # lower of grid abundance
-poly$z_sd <- z_sd # SD of fixed effect of grid abundance
-plot(poly["z_med"], main='Median of grid-group-abundnace', breaks='quantile')
-plot(poly["z_lower"], main='Lower of grid-group-abundnace', breaks='quantile')
-plot(poly["z_upper"], main='Upper of grid-group-abundnace', breaks='quantile')
-plot(poly["z_sd"], main='SD of grid-group-abundnace', breaks='quantile')
+# Transect-specific expected abundance (lam)
+lam_cols <- grep("^lam\\[", colnames(samples))
+if (length(lam_cols) > 0) {
+  lam <- samples[, lam_cols, drop = FALSE]
+  boxplot(lam, main = 'Transect Expected Abundance (lam)', ylab = 'lam')
+}
 
-# Transect-specific addtional abundance (alpha)
-alpha <- samples[,grep("^alpha", colnames(samples))]
-hist(alpha, breaks=50, main='Site-specific additional abundance (alpha)')
+# Average Group Size (AGS)
+if ("AGS" %in% colnames(samples)) {
+  avg_gs <- samples[, "AGS"]
+  hist(avg_gs, main = 'Posterior of Average Group Size (AGS)', xlab = 'Group Size', breaks = 50)
+}
 
-# Transect-specific proportionaed grid-abundance (Z)
-Z <- samples[,grep("^Z", colnames(samples))]
-hist(Z, breaks=100, main='ransect-specific proportionaed grid-abundance (Z)')
+# Grid-specific individual Abundance (ABUND = z * AGS)
+abund_cols <- grep("^ABUND\\[", colnames(samples))
+if (length(abund_cols) > 0) {
+  abund <- samples[, abund_cols, drop = FALSE]
+  colnames(abund) <- 1:grid_n
+  
+  abund_med <- apply(abund, 2, median, na.rm = TRUE)
+  abund_upper <- apply(abund, 2, function(x) quantile(x, 0.95))
+  abund_lower <- apply(abund, 2, function(x) quantile(x, 0.05))
+  abund_sd <- apply(abund, 2, sd, na.rm = TRUE)
+  
+  hist(abund_med, breaks = 100, xlim = c(0, max(abund_med) * 1.5), probability = TRUE, main = 'Grid Individual Abundance Histogram', xlab = 'Abundance')
+  hist(abund_upper, breaks = 100, add = TRUE, col = rgb(1,0,0,0.4), probability = TRUE)
+  hist(abund_lower, breaks = 100, add = TRUE, col = rgb(0,1,0,0.4), probability = TRUE)
+  legend('topright', legend = c('Median', 'Upper (95%)', 'Lower (5%)'), fill = c('white', rgb(1,0,0,0.4), rgb(0,1,0,0.4)))
+  
+  hist(abund_sd, main = 'SD of Grid-Level Individual Abundance', xlab = 'SD', breaks = 100)
+  
+  poly$abund_med <- abund_med
+  poly$abund_upper <- abund_upper
+  poly$abund_lower <- abund_lower
+  poly$abund_sd <- abund_sd
+  poly$abund_lowsd <- abund_sd < 50
+  
+  plot(poly["abund_med"], main = 'Median Grid-Level Individual Abundance')
+  plot(poly["abund_upper"], main = 'Upper (95%) Grid-Level Individual Abundance')
+  plot(poly["abund_lower"], main = 'Lower (5%) Grid-Level Individual Abundance')
+  plot(poly["abund_sd"], main = 'SD Grid-Level Individual Abundance')
+  plot(poly["abund_lowsd"], main = 'Abundance - Low SD Grids (SD < 100)')
+  
+  # Calculate total abundance post hoc from grid-wise abundance (fixing original typos)
+  print("Post hoc calculated Total Abundance (sum of grid-level posteriors):")
+  print(paste("Median sum:", sum(abund_med)))
+  print(paste("Upper sum:", sum(abund_upper)))
+  print(paste("Lower sum:", sum(abund_lower)))
+  
+  # Landscape density distribution
+  abund_med_land <- apply(abund, 1, median, na.rm = TRUE)
+  hist(abund_med_land, breaks = 100, main = 'Posterior of Median Landscape Grid Abundance', xlab = 'Median Grid Abundance')
+  density_quant <- quantile(abund_med_land, c(0.025, 0.05, 0.25, 0.5, 0.75, 0.95, 0.975))
+  print("Landscape-wide Grid Abundance Quantiles:")
+  print(density_quant)
+  abline(v = density_quant[1], lty = 2, col = "blue")
+  abline(v = density_quant[7], lty = 2, col = "blue")
+  abline(v = density_quant[4], lwd = 2, col = "red")
+  legend('topright', legend = c('Median', '95% CI'), col = c('red', 'blue'), lty = c(1, 2), lwd = c(2, 1))
+}
 
-### Transect-specific abundance (lam)
-lam <- samples[,grep("^lam", colnames(samples))]
-boxplot(lam)
-
-### Average group size (AGS)
-avg_gs <- samples[,grep("^AGS", colnames(samples))]
-hist(avg_gs, main='Median of Average group size (AGS)', breaks=50)
-
-### Grid-specific individual Abundance (ABUND = z * AGS)
-abund <- samples[,grep("^ABUND", colnames(samples))]
-colnames(abund) <- 1:grid_n
-# get 5% median and 95% from posterior of abundance
-abund_med <- apply(abund, 2, median, na.rm = TRUE)
-abund_upper <- apply(abund, 2, function(x) quantile(x, 0.95))
-abund_lower <- apply(abund, 2, function(x) quantile(x, 0.05))
-hist(abund_med, breaks=100, xlim=c(0, 100), probability=T, main='Indiv abundance Histogram')
-hist(abund_upper, breaks=100, add=T, col=rgb(1,0,0,0.5), probability=T)
-hist(abund_lower, breaks=100, add=T, col=rgb(0,1,0,0.5), probability=T)
-# SD of  posterior abundance
-abund_sd <- apply(abund, 2, sd, na.rm = TRUE)
-hist(abund_sd, main='SD of grid-level individual abundance', breaks=100)
-# raster visualization for abundance
-poly$abund_med <- abund_med # median abundance
-poly$abund_upper <- abund_upper
-poly$abund_lower <- abund_lower
-plot(poly["abund_med"], main='Median grid-level indiv-abundance')
-plot(poly["abund_upper"], main='Upper(95%) grid-level indiv-abundance')
-plot(poly["abund_lower"], main='Lower(5%) grid-level indiv-abundance')
-# SD abundance
-poly$abund_sd <- abund_sd
-poly$abund_lowsd <- abund_sd < 50
-plot(poly["abund_sd"], main='SD grid-level indiv-abundance', nbreaks = 100, breaks='quantile')
-plot(poly["abund_lowsd"], main='Abundance - Low SD grid (SD < 100)')
-# # subset prediction only low sd
-# abund_med_lowsd <- abund[,poly$abund_lowsd]
-# dim(abund_lowsd)
-# abund_lowsd_quant <- apply(abund_lowsd, 2, function(x) quantile(x, c(0.025, 0.05, 0.25, 0.5, 0.75, 0.95, 0.975)))
-# abund_lowsd_quant_sum <- apply(abund_lowsd_quant, 1, sum)
-# abund_lowsd_quant_sum 
-
-# Median and mean density (abundance per grid) across landscape (not across chain)
-abund_med_land <- apply(abund, 1, median, na.rm = TRUE)
-hist(abund_med_land, breaks=100)
-density_quant <- quantile(abund_med_land, c(0.025, 0.05, 0.25, 0.5, 0.75, 0.95, 0.975))
-density_quant
-abline(v=density_quant[1], lty=2);abline(v=density_quant[7], lty=2)
-abline(v=density_quant[4])
-
-############################################################################
 # Total abundance (from within-model derived-quantities)
-total_abund <- samples[,grep("^TOTAL_ABUND", colnames(samples))]
-hist(total_abund[total_abund < 10000], breaks=200, main='Total Abundance')
-abline(v=median(total_abund), lty=2)
-quantile(total_abund, c(0.05, 0.25, 0.5, 0.75, 0.95))
-abline(v=quantile(total_abund, c(0.05, 0.95)), col='red', lty=2)
-
-# Calculate total abundace post hoc from grid-wise abundance
-sum(abun_med)
-sum(abun_upper)
-sum(abun_lower)
+if ("TOTAL_ABUND" %in% colnames(samples)) {
+  total_abund <- samples[, "TOTAL_ABUND"]
+  hist(total_abund[total_abund < 10000], breaks = 200, main = 'Total Abundance Posterior', xlab = 'Abundance')
+  abline(v = median(total_abund), lty = 2, col = "red", lwd = 2)
+  ta_quant <- quantile(total_abund, c(0.05, 0.25, 0.5, 0.75, 0.95))
+  print("Within-model Total Abundance Posterior Quantiles:")
+  print(ta_quant)
+  abline(v = quantile(total_abund, c(0.05, 0.95)), col = 'blue', lty = 2)
+  legend('topright', legend = c('Median', '90% CI'), col = c('red', 'blue'), lty = c(2, 2), lwd = c(2, 1))
+}
 
 
