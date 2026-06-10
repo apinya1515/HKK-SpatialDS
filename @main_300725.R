@@ -190,30 +190,51 @@ if (any(grepl("^sigma\\[", colnames(samples)))) {
 # Beta regression coefficients
 beta_cols <- grep("^beta\\[", colnames(samples))
 if (length(beta_cols) > 0) {
+  # Sort beta columns numerically to avoid alphabetical sorting issues (e.g. beta[10] before beta[2])
+  beta_names <- colnames(samples)[beta_cols]
+  beta_indices <- as.numeric(gsub("beta\\[([0-9]+)\\]", "\\1", beta_names))
+  beta_cols <- beta_cols[order(beta_indices)]
   beta <- samples[, beta_cols, drop = FALSE]
+  
   if (length(beta_cols) == ncol(covar)) {
     colnames(beta) <- colnames(covar)
+  } else {
+    warning("Number of beta columns in MCMC (", length(beta_cols), ") does not match number of covariates (", ncol(covar), ")")
   }
+  
+  # Adjust margins to ensure vertical axis labels are not clipped
+  op <- par(mar = c(7, 4, 4, 2) + 0.1)
   boxplot(beta, outline = FALSE, main = "Beta Regression Coefficients", las = 2, ylab = "Effect Size")
   abline(h = 0, lty = 3, col = "red")
+  par(op) # Restore margins
   
   # Indicator variables (variable selection)
   w_cols <- grep("^w\\[", colnames(samples))
   if (length(w_cols) > 0) {
+    # Sort w columns numerically
+    w_names <- colnames(samples)[w_cols]
+    w_indices <- as.numeric(gsub("w\\[([0-9]+)\\]", "\\1", w_names))
+    w_cols <- w_cols[order(w_indices)]
     w <- samples[, w_cols, drop = FALSE]
+    
     if (length(w_cols) == ncol(covar)) {
       colnames(w) <- colnames(covar)
     }
     w_prop <- colSums(w) / nrow(w)
+    
+    op <- par(mar = c(7, 4, 4, 2) + 0.1)
     barplot(w_prop, main = "Inclusion Probability (w)", las = 2, ylab = "Probability", ylim = c(0, 1))
     abline(h = 0.5, lty = 2, col = "gray")
+    par(op) # Restore margins
     
     # Plot coefficients of variables with inclusion prob > 0.3
     active_vars <- which(w_prop > 0.3)
     if (length(active_vars) > 0) {
       beta_w <- beta[, active_vars, drop = FALSE]
+      op <- par(mar = c(7, 4, 4, 2) + 0.1)
       boxplot(beta_w, outline = FALSE, main = "Beta Coefficients (Inclusion > 0.3)", las = 2, ylab = "Effect Size")
       abline(h = 0, lty = 3, col = "red")
+      par(op) # Restore margins
     }
   }
 }
@@ -343,13 +364,46 @@ if (length(abund_cols) > 0) {
 # Total abundance (from within-model derived-quantities)
 if ("TOTAL_ABUND" %in% colnames(samples)) {
   total_abund <- samples[, "TOTAL_ABUND"]
-  hist(total_abund[total_abund < 10000], breaks = 200, main = 'Total Abundance Posterior', xlab = 'Abundance')
-  abline(v = median(total_abund), lty = 2, col = "red", lwd = 2)
+  
+  # Calculate summary stats on the full posterior
+  med_val <- median(total_abund)
+  ci_vals <- quantile(total_abund, c(0.05, 0.95))
+  
+  # Print values to console
   ta_quant <- quantile(total_abund, c(0.05, 0.25, 0.5, 0.75, 0.95))
   print("Within-model Total Abundance Posterior Quantiles:")
   print(ta_quant)
-  abline(v = quantile(total_abund, c(0.05, 0.95)), col = 'blue', lty = 2)
-  legend('topright', legend = c('Median', '90% CI'), col = c('red', 'blue'), lty = c(2, 2), lwd = c(2, 1))
+  
+  # Filter to a reasonable range for visualization if there are outliers
+  plot_data <- total_abund[total_abund < 10000]
+  if (length(plot_data) == 0) plot_data <- total_abund
+  
+  h <- hist(plot_data, breaks = 200, main = 'Total Abundance Posterior', xlab = 'Abundance')
+  
+  # Draw vertical lines for median and 90% CI (5% and 95% quantiles)
+  abline(v = med_val, lty = 2, col = "red", lwd = 2)
+  abline(v = ci_vals, col = 'blue', lty = 2, lwd = 1.5)
+  
+  # Add text labels for median and 90% CI bounds on the plot itself
+  y_text <- max(h$counts) * 0.85
+  xlims <- range(plot_data)
+  
+  if (med_val >= xlims[1] && med_val <= xlims[2]) {
+    text(x = med_val, y = y_text, labels = sprintf("Median: %.1f", med_val), col = "red", pos = 4, cex = 0.9)
+  }
+  if (ci_vals[1] >= xlims[1] && ci_vals[1] <= xlims[2]) {
+    text(x = ci_vals[1], y = y_text * 0.75, labels = sprintf("5%%: %.1f", ci_vals[1]), col = "blue", pos = 2, cex = 0.8)
+  }
+  if (ci_vals[2] >= xlims[1] && ci_vals[2] <= xlims[2]) {
+    text(x = ci_vals[2], y = y_text * 0.75, labels = sprintf("95%%: %.1f", ci_vals[2]), col = "blue", pos = 4, cex = 0.8)
+  }
+  
+  # Legend showing numeric values of Median and 90% CI
+  legend_labels <- c(
+    sprintf("Median: %.1f", med_val),
+    sprintf("90%% CI: [%.1f, %.1f]", ci_vals[1], ci_vals[2])
+  )
+  legend('topright', legend = legend_labels, col = c('red', 'blue'), lty = c(2, 2), lwd = c(2, 1.5), bg = "white")
 }
 
 
