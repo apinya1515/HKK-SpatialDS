@@ -57,7 +57,10 @@ data_prop <- read.csv('TRidentity.csv')
 ###########################################################################################
 ########################## INITIALIZATION ####################################
 ### Input parameters
-species <- 'BTG'
+species <- "BTG"
+# Map species code to full name for dynamic plots and filenames
+species_names <- c(BTG = "Banteng", SBR = "Sambar deer", GUR = "Gaur", MJK = "Muntjac")
+species_name <- if (species %in% names(species_names)) species_names[species] else species
 # visualize data
 discrete.hist(data_tr[data_tr$Species==species,]$Gz.sz, main='Grp size', xlab='Group Size')
 hist(data_tr[data_tr$Species==species,]$P.dist, main='Distance', xlab='Distance', breaks=10)
@@ -112,7 +115,7 @@ samples_chains <- runMCMC(Cmcmc, niter = 150000, nburnin = 100000, thin = 2, nch
 ################################################
 
 ### SAVE MODEL TO RDS files (So you dont have to run the same model again)
-saveRDS(samples_chains, 'Banteng_Model_dist_str_ndvi_cv_elev_slope_BB_DD_DE.rds')
+saveRDS(samples_chains, paste0(species_name, '_Model_dist_str_ndvi_cv_elev_slope_BB_DD_DE.rds'))
 #samples_chains <- readRDS('Banteng_FullModel.rds')
 #samples_chains <- readRDS("D:/Model_SBR_HKKcut20000burn15000.rds")
 ####################################################################################################
@@ -204,7 +207,7 @@ if (length(beta_cols) > 0) {
   
   # Adjust margins to ensure vertical axis labels are not clipped
   op <- par(mar = c(7, 4, 4, 2) + 0.1)
-  boxplot(beta, outline = FALSE, main = "Beta Regression Coefficients", las = 2, ylab = "Effect Size")
+  boxplot(beta, outline = FALSE, main = paste(species_name, "Beta Regression Coefficients"), las = 2, ylab = "Effect Size")
   abline(h = 0, lty = 3, col = "red")
   par(op) # Restore margins
   
@@ -223,7 +226,7 @@ if (length(beta_cols) > 0) {
     w_prop <- colSums(w) / nrow(w)
     
     op <- par(mar = c(7, 4, 4, 2) + 0.1)
-    barplot(w_prop, main = "Inclusion Probability (w)", las = 2, ylab = "Probability", ylim = c(0, 1))
+    barplot(w_prop, main = paste(species_name, "Inclusion Probability (w)"), las = 2, ylab = "Probability", ylim = c(0, 1))
     abline(h = 0.5, lty = 2, col = "gray")
     par(op) # Restore margins
     
@@ -232,7 +235,7 @@ if (length(beta_cols) > 0) {
     if (length(active_vars) > 0) {
       beta_w <- beta[, active_vars, drop = FALSE]
       op <- par(mar = c(7, 4, 4, 2) + 0.1)
-      boxplot(beta_w, outline = FALSE, main = "Beta Coefficients (Inclusion > 0.3)", las = 2, ylab = "Effect Size")
+      boxplot(beta_w, outline = FALSE, main = paste(species_name, "Beta Coefficients (Inclusion > 0.3)"), las = 2, ylab = "Effect Size")
       abline(h = 0, lty = 3, col = "red")
       par(op) # Restore margins
     }
@@ -310,7 +313,7 @@ if (length(lam_cols) > 0) {
 # Average Group Size (AGS)
 if ("AGS" %in% colnames(samples)) {
   avg_gs <- samples[, "AGS"]
-  hist(avg_gs, main = 'Posterior of Average Group Size (AGS)', xlab = 'Group Size', breaks = 50)
+  hist(avg_gs, main = paste('Posterior of', species_name, 'Average Group Size (AGS)'), xlab = 'Group Size', breaks = 50)
 }
 
 # Grid-specific individual Abundance (ABUND = z * AGS)
@@ -378,7 +381,7 @@ if ("TOTAL_ABUND" %in% colnames(samples)) {
   plot_data <- total_abund[total_abund < 10000]
   if (length(plot_data) == 0) plot_data <- total_abund
   
-  h <- hist(plot_data, breaks = 200, main = 'Total Abundance Posterior', xlab = 'Abundance')
+  h <- hist(plot_data, breaks = 200, main = paste(species_name, 'Total Abundance Posterior'), xlab = 'Abundance')
   
   # Draw vertical lines for median and 90% CI (5% and 95% quantiles)
   abline(v = med_val, lty = 2, col = "red", lwd = 2)
