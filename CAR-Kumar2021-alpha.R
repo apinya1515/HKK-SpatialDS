@@ -65,7 +65,7 @@ distanceModelCode <- nimbleCode({
     # Regression for mean abundance with b_spatial(CAR elements)
     # z = grid-level abundance
     fix_z[l] <- inprod(covar[l, 1:n_covar], beta[1:n_covar]) # regression for grid-level mean abundance
-    log(z[l]) <- fix_z[l] + b_spatial[l] # log(mean abundance) as sum of fixed effect and spatial random effect
+    z[l] <- exp(fix_z[l] + b_spatial[l]) # mean abundance as sum of fixed effect and spatial random effect
   }
   
   ### Abundance at each transect
@@ -74,7 +74,7 @@ distanceModelCode <- nimbleCode({
     # change function so that lam = nrep * (prop*lam)
     # then, log(lam) = log(nrep) + log(prop*z) ### nrepis number of rep
     Z[i] <- inprod(propM[i,1:L], z[1:L]) # proportionated abundance of transect based on overlapped grid
-    log(lam[i]) <- log(nrep) + log(Z[i]) + alpha # multiply abundance (z) of each grid with proportion that each grid contribute to the transect
+    lam[i] <- nrep * Z[i] * exp(alpha) # multiply abundance (z) of each grid with proportion that each grid contribute to the transect and site-specific alpha
   }
   
   
@@ -87,18 +87,20 @@ distanceModelCode <- nimbleCode({
     #!!!## summandForMean[m] = m*summand[m] = m*(muc^m)/m! = (muc^m)/(m-1)!
     summandForMean[m] <- m * summand[m]
   }
+  C_ztp <- sum(summand[1:gs_max]) # The sum of unnormalized probabilities
+
   ### calculate prob of each group size class & mean group size for each class
   # gs_k[k] = probability that animal cluster is size category k
   # gs_k_mean[k] = mean cluster size of size category k
   if(gsBreaks[1] == 1){ # if first distance category breaks is 1
-    gs_k[1] <- exp(-muc) / (1 - exp(-muc)) * summand[1] # prob for category 1
+    gs_k[1] <- summand[1] / C_ztp # prob for category 1
     gs_k_mean[1] <- summandForMean[1] / summand[1]
   } else { # else if first distance category breaks is >= 2
-    gs_k[1] <- exp(-muc) / (1 - exp(-muc)) * sum(summand[1:gsBreaks[1]]) # prob for category 1
+    gs_k[1] <- sum(summand[1:gsBreaks[1]]) / C_ztp # prob for category 1
     gs_k_mean[1] <- sum(summandForMean[1:gsBreaks[1]]) / sum(summand[1:gsBreaks[1]])
   }
   for (k in 2:K) { # prob for group category >= 2
-    gs_k[k] <- exp(-muc) / (1 - exp(-muc)) * sum(summand[(gsBreaks[k-1]+1):(gsBreaks[k])])
+    gs_k[k] <- sum(summand[(gsBreaks[k-1]+1):(gsBreaks[k])]) / C_ztp
     gs_k_mean[k] <- sum(summandForMean[(gsBreaks[k-1]+1):(gsBreaks[k])]) / sum(summand[(gsBreaks[k-1]+1):(gsBreaks[k])])
   }
   
@@ -106,7 +108,7 @@ distanceModelCode <- nimbleCode({
   ### Calculate sigma for each size class
   # sigma is function of group size class (k) bigger group size -> larger sigma[k] -> slower decay half normal detection function
   for(k in 1:K){ # loop through group size categories
-    log(sigma[k]) <- sigma0 + p * (gs_k_mean[k] - 1)
+    sigma[k] <- exp(sigma0 + p * (gs_k_mean[k] - 1))
   }
   
   ### Distance sampling model
@@ -118,13 +120,13 @@ distanceModelCode <- nimbleCode({
     # multiplying with the first term "sqrt(2*pi)*sigma[k]" to undoes the scaling of standard normal distribution, and adjust to match with sigma[k]
     # The dividing by "distBreaks[K]" is to normalize the prob of based on maximum distance
     # Distance class 1
-    mn_cell[k,1] <- (sqrt(2*3.1416)*sigma[k]/distBreaks[K]) * (phi(distBreaks[1]/sigma[k]) - 0.5)
+    mn_cell[k,1] <- (sqrt(2*3.1416)*sigma[k]/distBreaks[K]) * (pnorm(distBreaks[1], mean = 0, sd = sigma[k]) - 0.5)
     # calculate multinomial detection prob (gs[k] * gs[k,j])
     pi[k, 1] <- gs_k[k] * mn_cell[k, 1]
-    # Distance classes 2 to J (thorugh loop)
+    # Distance classes 2 to J (through loop)
     for(j in 2:J){
       # calculate difference between CDF at break of j class and j-1 class
-      mn_cell[k,j] <- (sqrt(2*3.1416)*sigma[k]/distBreaks[K]) * (phi(distBreaks[j]/sigma[k]) - phi(distBreaks[j-1]/sigma[k]))
+      mn_cell[k,j] <- (sqrt(2*3.1416)*sigma[k]/distBreaks[K]) * (pnorm(distBreaks[j], mean = 0, sd = sigma[k]) - pnorm(distBreaks[j-1], mean = 0, sd = sigma[k]))
       # calculate multinomial detection prob (gs[k] * gs[k,j])
       pi[k, j] <- gs_k[k] * mn_cell[k, j]
     }
@@ -170,8 +172,8 @@ constants <- list(nrep = nrep, I = tran_n, J = dist_class_n,
                   logFactorial=logFactorial)
 data <- list(y = y_matrix, covar = covar, propM = propM)
 inits <- list(muc = runif(1, 1, gs_max), sigma0 = runif(1, 2, 5), p = 0, 
-              tau = runif(1,0.5,1), beta0 = 0,beta = rnorm(ncol(covar), 1,2), 
-              spatial_z = runif(grid_n, 0, 0.1), w = rep(1, ncol(covar)))
+              tau = runif(1,0.5,1), beta = rnorm(ncol(covar), 1,2), 
+              b_spatial = runif(grid_n, 0, 0.1), alpha = runif(1, -0.5, 0.5))
 #saveRDS(constants, 'constants.RDS')
 #saveRDS(data, 'data.RDS')
 #saveRDS(inits, 'inits.RDS')

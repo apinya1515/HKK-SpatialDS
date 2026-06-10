@@ -16,6 +16,9 @@ data_sub <- data_tr %>% filter(Species==species)
 
 gs_max <- max(data_sub$Gz.sz)   # max group size
 gs_class_n <- length(gsBreaks) # number og gs classes
+# Ensure the last break in gsBreaks goes up to the maximum observed group size (gs_max)
+# to avoid truncation error and cover all observed group sizes in the final category.
+gsBreaks[gs_class_n] <- gs_max
 
 #### Create zeros-array for the data
 y_matrix <- array(0, dim=c(gs_class_n, dist_class_n, tran_n), 
@@ -63,5 +66,6 @@ num <- sapply(nb, length) # number of neighbors of each grid
 ## pre-calculate factorial
 # lgamma(x) is equivalent to the natural-log of the factorial = log((x-1)!)
 # So, lgamma(x+1) = log(x!)
-logFactorial = lgamma((1:gsBreaks[gs_class_n]) + 1)
+# Calculate up to gs_max to prevent index-out-of-bounds in the model loop
+logFactorial = lgamma((1:gs_max) + 1)
 

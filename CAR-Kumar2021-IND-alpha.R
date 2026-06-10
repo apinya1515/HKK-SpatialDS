@@ -71,7 +71,7 @@ distanceModelCode <- nimbleCode({
     # Regression for mean abundance with spatial_z(CAR elements)
     # z = grid-level abundance
     fix_z[l] <- beta0 + inprod(covar[l, 1:n_covar], w_beta[1:n_covar]) # regression for grid-level mean abundance
-    log(z[l]) <- fix_z[l] + spatial_z[l] # log(mean abundance) as sum of fixed effect and spatial random effect
+    z[l] <- exp(fix_z[l] + spatial_z[l]) # mean abundance as sum of fixed effect and spatial random effect
   }
   
   ### Abundance at each transect
@@ -82,7 +82,7 @@ distanceModelCode <- nimbleCode({
     # z_site[i] = transect-level abundance
     z_site[i] <- inprod(propM[i,1:L], z[1:L]) # proportionated abundance of transect based on overlapped grid
     alpha[i] ~ dnorm(0, tau = tau_alpha) # Draw the random effect for this specific site
-    log(lam[i]) <- log(nrep) + log(z_site[i]) + alpha[i] # multiply abundance (z) of each grid with proportion that each grid contribute to the transect
+    lam[i] <- nrep * z_site[i] * exp(alpha[i]) # multiply abundance (z) of each grid with proportion that each grid contribute to the transect and site-specific alpha
   }
   
   ### Modeling prob for each group size cateogory
@@ -115,7 +115,7 @@ distanceModelCode <- nimbleCode({
   ### Calculate sigma for each size class
   # sigma is function of group size class (k) bigger group size -> larger sigma[k] -> slower decay half normal detection function
   for(k in 1:K){ # loop through group size categories
-    log(sigma[k]) <- sigma0 + p * (gs_k_mean[k] - 1)
+    sigma[k] <- exp(sigma0 + p * (gs_k_mean[k] - 1))
   }
   
   ### Distance sampling model
@@ -127,13 +127,13 @@ distanceModelCode <- nimbleCode({
     # multiplying with the first term "sqrt(2*pi)*sigma[k]" to undoes the scaling of standard normal distribution, and adjust to match with sigma[k]
     # The dividing by "distBreaks[K]" is to normalize the prob of based on maximum distance
     # Distance class 1
-    mn_cell[k,1] <- (sqrt(2*3.1416)*sigma[k]/distBreaks[K]) * (phi(distBreaks[1]/sigma[k]) - 0.5)
+    mn_cell[k,1] <- (sqrt(2*3.1416)*sigma[k]/distBreaks[K]) * (pnorm(distBreaks[1], mean = 0, sd = sigma[k]) - 0.5)
     # calculate multinomial detection prob (gs[k] * gs[k,j])
     pi[k, 1] <- gs_k[k] * mn_cell[k, 1]
-    # Distance classes 2 to J (thorugh loop)
+    # Distance classes 2 to J (through loop)
     for(j in 2:J){
       # calculate difference between CDF at break of j class and j-1 class
-      mn_cell[k,j] <- (sqrt(2*3.1416)*sigma[k]/distBreaks[K]) * (phi(distBreaks[j]/sigma[k]) - phi(distBreaks[j-1]/sigma[k]))
+      mn_cell[k,j] <- (sqrt(2*3.1416)*sigma[k]/distBreaks[K]) * (pnorm(distBreaks[j], mean = 0, sd = sigma[k]) - pnorm(distBreaks[j-1], mean = 0, sd = sigma[k]))
       # calculate multinomial detection prob (gs[k] * gs[k,j])
       pi[k, j] <- gs_k[k] * mn_cell[k, j]
     }
@@ -178,9 +178,10 @@ constants <- list(nrep = nrep, I = tran_n, J = dist_class_n,
                   logFactorial=logFactorial)
 data <- list(y = y_matrix, covar = covar, propM = propM)
 inits <- list(muc = runif(1, 1, gs_max), sigma0 = runif(1, 2, 5), p = 0, 
-              tau = runif(1,0.5,1), beta0 = 0,beta = rnorm(ncol(covar), 1,2), 
+              beta0 = 0, beta = rnorm(ncol(covar), 1,2), 
               spatial_z = runif(grid_n, 0, 0.1), w = rep(1, ncol(covar)),
-              sigma_alpha = 1)
+              sigma_alpha = 1, sigma_spatial = runif(1, 0.5, 2),
+              alpha = rep(0, tran_n))
 #saveRDS(constants, 'constants.RDS')
 #saveRDS(data, 'data.RDS')
 #saveRDS(inits, 'inits.RDS')
