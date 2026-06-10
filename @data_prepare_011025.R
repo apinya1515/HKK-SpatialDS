@@ -69,3 +69,6 @@ num <- sapply(nb, length) # number of neighbors of each grid
 # Calculate up to gs_max to prevent index-out-of-bounds in the model loop
 logFactorial = lgamma((1:gs_max) + 1)
 
+# Define a water mask: 0 if grid cell is mostly water (WA > 0.5), 1 otherwise
+water_mask <- ifelse(data_land_orig$WA > 0.5, 0, 1)
+

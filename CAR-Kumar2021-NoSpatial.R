@@ -42,11 +42,11 @@
 distanceModelCode <- nimbleCode({
   ##### Priors #####
   for(i in 1:n_covar){ # Loop through covariates to create priors for coefficients (beta) and indicator (w)
-    beta[i] ~ dnorm(0, sd = 5) # priors of landscape var regression coefficient
+    beta[i] ~ dnorm(0, sd = 1.5) # weakly informative priors of landscape var regression coefficient
     w[i] ~ dbern(0.5) # priors of binary indicator for each coefficient
   }
   # Global Intercept of regression for fixed effect z (fix_z)
-  beta0 ~ dnorm(0, sd = 5)
+  beta0 ~ dnorm(0, sd = 1.5) # weakly informative intercept prior
 
   muc ~ dunif(1, gs_max) # universal average cluster size (for truncated-Poisson)
   #sigma0 ~ dunif(1, 10) # sigma0 # try larger prior to avoid -Inf logProb error
@@ -61,7 +61,7 @@ distanceModelCode <- nimbleCode({
     # Regression for mean abundance with spatial_z(CAR elements)
     # z = grid-level abundance
     fix_z[l] <- beta0 + inprod(covar[l, 1:n_covar], w_beta[1:n_covar]) # regression for grid-level mean abundance
-    z[l] <- exp(fix_z[l]) # mean abundance as exponentiated fixed effect
+    z[l] <- exp(fix_z[l]) * water_mask[l] # mean abundance as exponentiated fixed effect, masked for water
   }
   
   ### Abundance at each transect
@@ -163,7 +163,7 @@ constants <- list(nrep = nrep, I = tran_n, J = dist_class_n,
                   L = grid_n, n_covar = ncol(covar),
                   distBreaks = distBreaks, gsBreaks = gsBreaks,
                   logFactorial=logFactorial)
-data <- list(y = y_matrix, covar = covar, propM = propM)
+data <- list(y = y_matrix, covar = covar, propM = propM, water_mask = water_mask)
 inits <- list(muc = runif(1, 1, gs_max), sigma0 = runif(1, 2, 5), p = 0, 
               beta0 = 0,beta = rnorm(ncol(covar), 1,2), 
               w = rep(1, ncol(covar)))

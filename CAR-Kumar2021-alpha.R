@@ -42,10 +42,10 @@
 distanceModelCode <- nimbleCode({
   ##### Priors #####
   for(i in 1:n_covar){ # Loop through covariates to create priors for coefficients (beta) and indicator (w)
-    beta[i] ~ dunif(-10, 10) # priors of landscape var regression coefficient
+    beta[i] ~ dnorm(0, sd = 1.5) # weakly informative priors of landscape var regression coefficient
   }
   # Site(transect)-specific effect on abundance
-  alpha ~ dunif(-2, 2)
+  alpha ~ dnorm(0, sd = 0.5) # weakly informative prior to avoid confounding with intercept
   
   muc ~ dunif(1, gs_max) # universal average cluster size (for truncated-Poisson)
   #sigma0 ~ dunif(1, 10) # sigma0 # try larger prior to avoid -Inf logProb error
@@ -53,7 +53,8 @@ distanceModelCode <- nimbleCode({
   p ~ dunif(0.1, 10) # model parameter for sigma ~ group_size
   
   # CAR priors
-  tau ~ dgamma(0.001, 0.001) # precision param for spatial CAR
+  sigma_spatial ~ dunif(0, 1.5) # weakly informative standard deviation prior for spatial CAR
+  tau <- 1/(sigma_spatial^2) # precision param for spatial CAR
   weights[1:njoin] <- 1 # weight of all spatial joins = 1
   b_spatial[1:L] ~ dcar_normal(adj = adj[1:njoin], weights = weights[1:njoin], 
                                num = num[1:L], tau = tau, zero_mean = 0) # random spatial effect (intercept) intercept for each grid
@@ -65,7 +66,7 @@ distanceModelCode <- nimbleCode({
     # Regression for mean abundance with b_spatial(CAR elements)
     # z = grid-level abundance
     fix_z[l] <- inprod(covar[l, 1:n_covar], beta[1:n_covar]) # regression for grid-level mean abundance
-    z[l] <- exp(fix_z[l] + b_spatial[l]) # mean abundance as sum of fixed effect and spatial random effect
+    z[l] <- exp(fix_z[l] + b_spatial[l]) * water_mask[l] # mean abundance as sum of fixed effect and spatial random effect, masked for water
   }
   
   ### Abundance at each transect
@@ -170,10 +171,10 @@ constants <- list(nrep = nrep, I = tran_n, J = dist_class_n,
                   distBreaks = distBreaks, gsBreaks = gsBreaks,
                   adj = adj, num = num, njoin = njoin,
                   logFactorial=logFactorial)
-data <- list(y = y_matrix, covar = covar, propM = propM)
+data <- list(y = y_matrix, covar = covar, propM = propM, water_mask = water_mask)
 inits <- list(muc = runif(1, 1, gs_max), sigma0 = runif(1, 2, 5), p = 0, 
-              tau = runif(1,0.5,1), beta = rnorm(ncol(covar), 1,2), 
-              b_spatial = runif(grid_n, 0, 0.1), alpha = runif(1, -0.5, 0.5))
+              beta = rnorm(ncol(covar), 1,2), b_spatial = runif(grid_n, 0, 0.1), 
+              alpha = runif(1, -0.5, 0.5), sigma_spatial = runif(1, 0.5, 1.2))
 #saveRDS(constants, 'constants.RDS')
 #saveRDS(data, 'data.RDS')
 #saveRDS(inits, 'inits.RDS')
