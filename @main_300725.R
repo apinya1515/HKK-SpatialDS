@@ -113,7 +113,7 @@ samples_chains <- runMCMC(Cmcmc, niter = 150000, nburnin = 100000, thin = 2, nch
 
 ### SAVE MODEL TO RDS files (So you dont have to run the same model again)
 saveRDS(samples_chains, 'Banteng_Model_dist_str_ndvi_cv_elev_slope_BB_DD_DE.rds')
-samples_chains <- readRDS('Banteng_FullModel.rds')
+#samples_chains <- readRDS('Banteng_FullModel.rds')
 #samples_chains <- readRDS("D:/Model_SBR_HKKcut20000burn15000.rds")
 ####################################################################################################
 
