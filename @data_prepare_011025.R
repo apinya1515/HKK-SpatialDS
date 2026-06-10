@@ -5,6 +5,8 @@ tran_id <- sort(unique(data_tr$Tr.no)) # name of transect
 tran_n <- length(tran_id) # number of transect
 grid_id <- data_land$grid_id # grid id
 grid_n <- nrow(data_land) # number of grid
+# Cap physically impossible NDVI CV values at 0.4 before scaling to prevent outlier distortion
+data_land$ndvi_cv[data_land$ndvi_cv > 0.4] <- 0.4
 covar <- as.data.frame(data_land[,-1] %>% scale()) # select only covariate columns and rescale
 
 ### Create observation matrix (matrix=transect, row=cluster size class ,column=distance class)
@@ -69,6 +71,6 @@ num <- sapply(nb, length) # number of neighbors of each grid
 # Calculate up to gs_max to prevent index-out-of-bounds in the model loop
 logFactorial = lgamma((1:gs_max) + 1)
 
-# Define a water mask: 0 if grid cell is mostly water (WA > 0.5), 1 otherwise
-water_mask <- ifelse(data_land_orig$WA > 0.5, 0, 1)
+# Define a water mask: 0 if grid cell has substantial water (WA > 0.3), 1 otherwise
+water_mask <- ifelse(data_land_orig$WA > 0.3, 0, 1)
 
