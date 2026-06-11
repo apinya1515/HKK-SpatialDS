@@ -1,5 +1,5 @@
-# model_selection.R
-# Backward stepwise variable selection using wAIC in NIMBLE
+# model_selection_spatial.R
+# Stepwise variable selection using wAIC with spatial CAR model in NIMBLE
 # For each species, parallelized model evaluations across 8 cores
 
 library(nimble)
@@ -26,7 +26,7 @@ species_names <- c(BTG = "Banteng", SBR = "Sambar deer", GAR = "Gaur", MJK = "Mu
 covar_names <- colnames(data_land)[-1] # dist_str, ndvi_cv, elev, slope, BB, DD, DE
 n_covar <- length(covar_names)
 
-cat("Starting model variable selection based on wAIC using backward stepwise search...\n")
+cat("Starting spatial model variable selection based on wAIC...\n")
 cat("Number of covariates: ", n_covar, " (", paste(covar_names, collapse=", "), ")\n\n")
 
 # Store final results for all species
@@ -53,7 +53,7 @@ for (sp in all_species) {
   gsBreaks <- unique(pmin(c(1, 2, 3, 4, 8), gs_max_sp))
   dist_class_n <- 5
   
-  cat("Initializing cluster of 8 workers for parallel model runs...\n")
+  cat("Initializing cluster of 8 workers for parallel spatial model runs...\n")
   cl <- makeCluster(8)
   
   # Export variables to workers
@@ -77,14 +77,14 @@ for (sp in all_species) {
     garbage_out <- capture.output({
       source('@data_prepare_011025.R')
       
-      # Load model
-      source('CAR-Kumar2021-NoSpatial.R')
+      # Load spatial model
+      source('CAR-Kumar2021-IND.R')
       
       # Build model
       distanceModel <- nimbleModel(code = distanceModelCode, constants = constants, data = data, inits = inits)
       
-      # Configure MCMC
-      mcmcConf <- configureMCMC(distanceModel, monitors = tracked_var, enableWAIC = TRUE)
+      # Configure MCMC with minimal monitors to avoid spatial array copy overhead
+      mcmcConf <- configureMCMC(distanceModel, monitors = c("beta0", "beta", "w"), enableWAIC = TRUE)
       mcmcConf$removeSamplers('w')
       
       # Build and compile
@@ -100,8 +100,9 @@ for (sp in all_species) {
         CdistanceModel$calculate() # Propagate w values
         
         # Suppress MCMC progress output to prevent deadlock
+        # Run 10,000 iterations for spatial model variable selection
         garbage_mcmc <- capture.output({
-          samples_chains <- runMCMC(Cmcmc, niter = 50000, nburnin = 30000, thin = 2, nchains = 1, WAIC=TRUE,
+          samples_chains <- runMCMC(Cmcmc, niter = 10000, nburnin = 6000, thin = 1, nchains = 1, WAIC=TRUE,
                                     setSeed = 999)
         })
         
@@ -183,9 +184,9 @@ for (sp in all_species) {
       w_cand <- w_curr_back
       w_cand[v] <- 0
       w_str <- paste(w_cand, collapse = "")
-      candidate_masks[[length(candidate_masks) + 1]] <- w_cand
+      candidate_masks[[length(candidate_masks) + 1]] = w_cand
       if (!(w_str %in% names(evaluated_models))) {
-        uncached_masks[[length(uncached_masks) + 1]] <- w_cand
+        uncached_masks[[length(uncached_masks) + 1]] = w_cand
       }
     }
     
@@ -249,9 +250,9 @@ for (sp in all_species) {
       w_cand <- w_curr_for
       w_cand[v] <- 1
       w_str <- paste(w_cand, collapse = "")
-      candidate_masks[[length(candidate_masks) + 1]] <- w_cand
+      candidate_masks[[length(candidate_masks) + 1]] = w_cand
       if (!(w_str %in% names(evaluated_models))) {
-        uncached_masks[[length(uncached_masks) + 1]] <- w_cand
+        uncached_masks[[length(uncached_masks) + 1]] = w_cand
       }
     }
     
@@ -337,7 +338,7 @@ for (sp in all_species) {
 }
 
 cat("========================================================================\n")
-cat("SUMMARY OF ALL SPECIES MODEL SELECTION\n")
+cat("SUMMARY OF ALL SPECIES MODEL SELECTION (SPATIAL)\n")
 cat("========================================================================\n")
 
 # Combine results into one data frame
@@ -345,5 +346,5 @@ final_summary <- do.call(rbind, all_results)
 print(final_summary)
 
 # Write results to CSV file
-write.csv(final_summary, "Results/Model_Selection_Summary.csv", row.names = FALSE)
-cat("\nResults successfully saved to 'Results/Model_Selection_Summary.csv'\n")
+write.csv(final_summary, "Results/Model_Selection_Spatial_Summary.csv", row.names = FALSE)
+cat("\nResults successfully saved to 'Results/Model_Selection_Spatial_Summary.csv'\n")

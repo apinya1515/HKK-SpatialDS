@@ -59,7 +59,7 @@ data_prop <- read.csv('TRidentity.csv')
 ### Input parameters
 species <- "BTG"
 # Map species code to full name for dynamic plots and filenames
-species_names <- c(BTG = "Banteng", SBR = "Sambar deer", GUR = "Gaur", MJK = "Muntjac")
+species_names <- c(BTG = "Banteng", SBR = "Sambar deer", GAR = "Gaur", MJK = "Muntjac")
 species_name <- if (species %in% names(species_names)) species_names[species] else species
 # visualize data
 discrete.hist(data_tr[data_tr$Species==species,]$Gz.sz, main='Grp size', xlab='Group Size')
@@ -318,6 +318,19 @@ if ("AGS" %in% colnames(samples)) {
 
 # Grid-specific individual Abundance (ABUND = z * AGS)
 abund_cols <- grep("^ABUND\\[", colnames(samples))
+if (length(abund_cols) == 0) {
+  # If ABUND is not tracked, calculate it post hoc as the product of group abundance (z) and average group size (AGS)
+  z_cols <- grep("^z\\[", colnames(samples))
+  if (length(z_cols) > 0 && "AGS" %in% colnames(samples)) {
+    z_samples <- samples[, z_cols, drop = FALSE]
+    ags_samples <- samples[, "AGS"]
+    abund <- sweep(z_samples, 1, ags_samples, FUN = "*")
+    colnames(abund) <- paste0("ABUND[", 1:ncol(abund), "]")
+    samples <- cbind(samples, abund)
+    abund_cols <- grep("^ABUND\\[", colnames(samples))
+  }
+}
+
 if (length(abund_cols) > 0) {
   abund <- samples[, abund_cols, drop = FALSE]
   colnames(abund) <- 1:grid_n

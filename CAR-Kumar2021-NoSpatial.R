@@ -156,7 +156,7 @@ distanceModelCode <- nimbleCode({
 
 # Tracked variables' names
 tracked_var <- c("sigma", "p", "muc", "gs_k", "sigma0", "pi", "fix_z", "z", "lam",
-                 'beta', 'w', 'AGS', 'TOTAL_ABUND')
+                 'beta', 'w', 'AGS', 'ABUND', 'TOTAL_ABUND')
 
 constants <- list(nrep = nrep, I = tran_n, J = dist_class_n,
                   K = gs_class_n, gs_max = gs_max, 
