@@ -53,8 +53,8 @@ for (sp in all_species) {
   gsBreaks <- unique(pmin(c(1, 2, 3, 4, 8), gs_max_sp))
   dist_class_n <- 5
   
-  cat("Initializing cluster of 8 workers for parallel model runs...\n")
-  cl <- makeCluster(8)
+  cat("Initializing cluster of 4 workers for parallel model runs to prevent OOM...\n")
+  cl <- makeCluster(4)
   
   # Export variables to workers
   clusterExport(cl, c("sp", "species_names", "nrep", "dist_limit", "gsBreaks", 
@@ -321,8 +321,8 @@ for (sp in all_species) {
   # Calculate wAIC model weights (Akaike weights equivalent for wAIC)
   df_models$Weight <- exp(-0.5 * df_models$Delta_wAIC) / sum(exp(-0.5 * df_models$Delta_wAIC))
   
-  # Keep top 5 models
-  top_5_df <- head(df_models, 5)
+  # Keep top 5 models OR any model with Delta_wAIC <= 2
+  top_5_df <- df_models %>% filter(row_number() <= 5 | Delta_wAIC <= 2)
   top_5_df$Rank <- 1:nrow(top_5_df)
   top_5_df$Species <- sp_name
   

@@ -1,0 +1,20 @@
+Starting Step 2 & 3: Spatial Model Evaluation & Final Comparison
+Found intermediate results for Banteng, loading from file.
+
+Skipping Banteng (already completed from previous run).
+
+========================================================================
+SPECIES:  Sambar deer 
+========================================================================
+Evaluating Spatial variants for the top 5 NoSpatial models.
+[20:58:58] Model 1/5: ndvi_cv + elev + BB -> SKIPPING (found Results/Posteriors/Samples_SBR_Rank1.rds)
+[20:59:01]   -> Loaded: WAIC = 513.54, TOTAL_ABUND median = 9820.8
+[20:59:01] Model 2/5: dist_str + ndvi_cv + elev + BB + DD -> SKIPPING (found Results/Posteriors/Samples_SBR_Rank2.rds)
+[20:59:02]   -> Loaded: WAIC = 512.59, TOTAL_ABUND median = 9021.6
+[20:59:03] Model 3/5: dist_str + ndvi_cv + elev + BB -> SKIPPING (found Results/Posteriors/Samples_SBR_Rank3.rds)
+[20:59:04]   -> Loaded: WAIC = 514.81, TOTAL_ABUND median = 10713.0
+[20:59:05] Model 4/5: ndvi_cv + elev + BB + DD -> SKIPPING (found Results/Posteriors/Samples_SBR_Rank4.rds)
+[20:59:06]   -> Loaded: WAIC = 514.09, TOTAL_ABUND median = 10066.3
+[20:59:06] Model 5/5: dist_str + ndvi_cv + elev + slope + BB
+[20:59:06]   Compiling NIMBLE model fresh (avoids memory leak)...
+[21:02:53]   Compilation done. Starting MCMC...
