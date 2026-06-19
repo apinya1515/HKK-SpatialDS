@@ -1,0 +1,6 @@
+s <- readRDS("Results/Posteriors/Samples_BTG_Rank1.rds")
+cat("Class:", class(s), "\n")
+cat("Names:", names(s), "\n")
+cat("Class of samples:", class(s$samples), "\n")
+cat("Dim of samples:", dim(s$samples), "\n")
+cat("Sample colnames:", head(colnames(s$samples), 10), "\n")
