@@ -242,8 +242,24 @@ for (sp_name in species_list) {
       
       # Save Posterior plot
       jpeg(sprintf("Results/Posteriors/Posterior_%s_Rank%d.jpg", sp_code, rank), width=800, height=600)
-      hist(res$total_abund_samples, breaks=50, main=sprintf("Total Abundance Posterior: %s (Rank %d)", sp_name, rank), xlab="Total Abundance")
-      abline(v=quants["50%"], col="red", lwd=2)
+      hist(res$total_abund_samples, breaks=50, main=sprintf("Total Abundance Posterior: %s (Rank %d)", sp_name, rank), xlab="Total Abundance", col="lightgray", border="white")
+      
+      # Median
+      abline(v=quants["50%"], col="blue", lwd=2)
+      text(quants["50%"], par("usr")[4]*0.9, paste("Median:", round(quants["50%"], 1)), col="blue", pos=4)
+      
+      # 90% CI
+      abline(v=quants["5%"], col="green", lwd=2, lty=2)
+      abline(v=quants["95%"], col="green", lwd=2, lty=2)
+      text(quants["5%"], par("usr")[4]*0.8, paste("90% L:", round(quants["5%"], 1)), col="darkgreen", pos=2)
+      text(quants["95%"], par("usr")[4]*0.8, paste("90% U:", round(quants["95%"], 1)), col="darkgreen", pos=4)
+      
+      # 95% CI
+      abline(v=quants["2.5%"], col="red", lwd=2, lty=2)
+      abline(v=quants["97.5%"], col="red", lwd=2, lty=2)
+      text(quants["2.5%"], par("usr")[4]*0.7, paste("95% L:", round(quants["2.5%"], 1)), col="red", pos=2)
+      text(quants["97.5%"], par("usr")[4]*0.7, paste("95% U:", round(quants["97.5%"], 1)), col="red", pos=4)
+      
       dev.off()
       
       # Save Map

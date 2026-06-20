@@ -18,3 +18,39 @@ Evaluating Spatial variants for the top 5 NoSpatial models.
 [20:59:06] Model 5/5: dist_str + ndvi_cv + elev + slope + BB
 [20:59:06]   Compiling NIMBLE model fresh (avoids memory leak)...
 [21:02:53]   Compilation done. Starting MCMC...
+[00:56:00]   -> WAIC = 517.54, TOTAL_ABUND median = 10615.0
+[00:56:06]   Memory after cleanup: 809 MB used
+
+Global Top 5 models for Sambar deer:
+          Species Rank                             Covariates     wAIC
+2.5%1 Sambar deer    1    dist_str + ndvi_cv + elev + BB + DD 512.5902
+2.5%  Sambar deer    2                    ndvi_cv + elev + BB 513.5366
+2.5%3 Sambar deer    3               ndvi_cv + elev + BB + DD 514.0923
+2.5%2 Sambar deer    4         dist_str + ndvi_cv + elev + BB 514.8072
+2.5%4 Sambar deer    5 dist_str + ndvi_cv + elev + slope + BB 517.5352
+      Delta_wAIC     Weight      lppd    pWAIC    Type   CI_2.5     CI_5
+2.5%1  0.0000000 0.39852375 -227.1954 29.09968 Spatial 6613.531 6929.797
+2.5%   0.9464833 0.24827213 -228.0015 28.76680 Spatial 7012.013 7443.322
+2.5%3  1.5021345 0.18804849 -227.5511 29.49504 Spatial 7363.351 7748.796
+2.5%2  2.2170473 0.13153112 -227.8998 29.50386 Spatial 7281.275 7750.661
+2.5%4  4.9450236 0.03362451 -228.8420 29.92559 Spatial 7262.875 7678.935
+         CI_25     CI_50    CI_75    CI_95  CI_97.5
+2.5%1 8076.464  9021.562 10221.12 12756.62 14591.34
+2.5%  8749.734  9820.814 11056.17 13472.49 14252.83
+2.5%3 9030.070 10066.270 11178.93 12889.40 13597.61
+2.5%2 9391.632 10713.047 12393.57 15979.30 17642.92
+2.5%4 9283.815 10615.017 12295.69 16730.04 18674.05
+[00:56:07] Saved intermediate results for Sambar deer.
+
+========================================================================
+SPECIES:  Gaur 
+========================================================================
+Evaluating Spatial variants for the top 5 NoSpatial models.
+[00:56:08] Model 1/5: ndvi_cv + elev + BB + DE
+[00:56:08]   Compiling NIMBLE model fresh (avoids memory leak)...
+[01:01:59]   Compilation done. Starting MCMC...
+[05:23:48]   -> WAIC = 164.04, TOTAL_ABUND median = 3253.1
+[05:23:54]   Memory after cleanup: 1372 MB used
+[05:23:55] Model 2/5: ndvi_cv + elev + BB + DD + DE
+[05:23:55]   Compiling NIMBLE model fresh (avoids memory leak)...
+[05:29:19]   Compilation done. Starting MCMC...

@@ -27,6 +27,39 @@ final_results <- bind_rows(final_results_list) %>% distinct()
 species_list <- unique(final_results$Species)
 all_species_codes <- c("Banteng" = "BTG", "Sambar deer" = "SBR", "Gaur" = "GAR", "Muntjac" = "MJK")
 
+# Rename existing _Rank files to _GlobalRank files based on NoSpatial covariates
+cat("\nChecking for legacy _Rank files to rename to _GlobalRank...\n")
+for (sp_name in species_list) {
+  sp_code <- all_species_codes[[sp_name]]
+  sp_nospatial <- final_results %>% filter(Species == sp_name, Type == "NoSpatial") %>% arrange(wAIC)
+  sp_spatial <- final_results %>% filter(Species == sp_name, Type == "Spatial")
+  
+  if (nrow(sp_nospatial) == 0 || nrow(sp_spatial) == 0) next
+  
+  for (i in 1:nrow(sp_spatial)) {
+    global_rank <- sp_spatial$Rank[i]
+    covars_str <- sp_spatial$Covariates[i]
+    
+    nospatial_idx <- which(sp_nospatial$Covariates == covars_str)
+    if (length(nospatial_idx) == 0) next
+    nospatial_rank <- nospatial_idx[1]
+    
+    # Define old and new filenames
+    old_rds <- sprintf("Results/Posteriors/Samples_%s_Rank%d.rds", sp_code, nospatial_rank)
+    new_rds <- sprintf("Results/Posteriors/Samples_%s_GlobalRank%d.rds", sp_code, global_rank)
+    if (file.exists(old_rds) && !file.exists(new_rds)) file.rename(old_rds, new_rds)
+    
+    old_jpg <- sprintf("Results/Posteriors/Posterior_%s_Rank%d.jpg", sp_code, nospatial_rank)
+    new_jpg <- sprintf("Results/Posteriors/Posterior_%s_GlobalRank%d.jpg", sp_code, global_rank)
+    if (file.exists(old_jpg) && !file.exists(new_jpg)) file.rename(old_jpg, new_jpg)
+    
+    old_tif <- sprintf("Results/Maps/Map_%s_Rank%d.tif", sp_code, nospatial_rank)
+    new_tif <- sprintf("Results/Maps/Map_%s_GlobalRank%d.tif", sp_code, global_rank)
+    if (file.exists(old_tif) && !file.exists(new_tif)) file.rename(old_tif, new_tif)
+  }
+}
+cat("Renaming check complete.\n")
+
 # Create output dir for tiffs
 if(!dir.exists("Results/Maps")) {
   dir.create("Results/Maps", recursive=TRUE)
@@ -66,13 +99,13 @@ for (sp_name in species_list) {
     covars_str <- sp_res$Covariates[i]
     weight <- sp_res$NormWeight[i]
     
-    rds_file <- sprintf("Results/Posteriors/Samples_%s_Rank%d.rds", sp_code, model_rank)
+    rds_file <- sprintf("Results/Posteriors/Samples_%s_GlobalRank%d.rds", sp_code, model_rank)
     if (!file.exists(rds_file)) {
-      cat(sprintf("  WARNING: Could not find MCMC samples for Model Rank %d. Skipping...\n", model_rank))
+      cat(sprintf("  WARNING: Could not find MCMC samples %s (Global Rank %d). Skipping...\n", rds_file, model_rank))
       next
     }
     
-    cat("  Loading Model Rank", model_rank, "-", covars_str, "(Weight:", round(weight, 3), ")\n")
+    cat("  Loading Global Rank", model_rank, "-", covars_str, "(Weight:", round(weight, 3), ")\n")
     
     s_obj <- readRDS(rds_file)
     samps <- s_obj$samples
@@ -116,13 +149,39 @@ for (sp_name in species_list) {
   total_mean <- mean(pooled_total_vector)
   total_median <- median(pooled_total_vector)
   total_ci <- quantile(pooled_total_vector, probs = c(0.025, 0.975))
+  total_ci_90 <- quantile(pooled_total_vector, probs = c(0.05, 0.95))
   
   cat("  --------------------------------------\n")
   cat(sprintf("  TOTAL ABUNDANCE BMA ESTIMATES:\n"))
   cat(sprintf("  Mean:   %.1f\n", total_mean))
   cat(sprintf("  Median: %.1f\n", total_median))
+  cat(sprintf("  90%% CI: %.1f - %.1f\n", total_ci_90[1], total_ci_90[2]))
   cat(sprintf("  95%% CI: %.1f - %.1f\n", total_ci[1], total_ci[2]))
   cat("  --------------------------------------\n")
+  
+  # Plot Histogram
+  cat("  Saving Histogram...\n")
+  jpeg(paste0("Results/Maps/TotalAbundance_Hist_", sp_code, ".jpg"), width=800, height=600)
+  hist(pooled_total_vector, breaks=50, main=paste("Model Averaged Total Abundance:", sp_name), 
+       xlab="Total Abundance", col="lightgray", border="white")
+  
+  # Median line
+  abline(v=total_median, col="blue", lwd=2)
+  text(total_median, par("usr")[4]*0.9, paste("Median:", round(total_median, 1)), col="blue", pos=4)
+  
+  # 90% CI
+  abline(v=total_ci_90[1], col="green", lwd=2, lty=2)
+  abline(v=total_ci_90[2], col="green", lwd=2, lty=2)
+  text(total_ci_90[1], par("usr")[4]*0.8, paste("90% L:", round(total_ci_90[1], 1)), col="darkgreen", pos=2)
+  text(total_ci_90[2], par("usr")[4]*0.8, paste("90% U:", round(total_ci_90[2], 1)), col="darkgreen", pos=4)
+  
+  # 95% CI
+  abline(v=total_ci[1], col="red", lwd=2, lty=2)
+  abline(v=total_ci[2], col="red", lwd=2, lty=2)
+  text(total_ci[1], par("usr")[4]*0.7, paste("95% L:", round(total_ci[1], 1)), col="red", pos=2)
+  text(total_ci[2], par("usr")[4]*0.7, paste("95% U:", round(total_ci[2], 1)), col="red", pos=4)
+  
+  dev.off()
   
   # Export to GeoTIFF
   cat("  Exporting Maps...\n")
