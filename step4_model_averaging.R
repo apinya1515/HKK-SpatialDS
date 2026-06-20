@@ -144,6 +144,7 @@ for (sp_name in species_list) {
   cat("  Calculating Grid-wise Variance...\n")
   grid_mean <- apply(pooled_abund_matrix, 2, mean)
   grid_sd   <- apply(pooled_abund_matrix, 2, sd)
+  grid_cv   <- ifelse(grid_mean == 0, 0, grid_sd / grid_mean)
   
   # Calculate Total Abundance stats
   total_mean <- mean(pooled_total_vector)
@@ -161,7 +162,7 @@ for (sp_name in species_list) {
   
   # Plot Histogram
   cat("  Saving Histogram...\n")
-  jpeg(paste0("Results/Maps/TotalAbundance_Hist_", sp_code, ".jpg"), width=800, height=600)
+  jpeg(paste0("Results/Posteriors/TotalAbundance_Hist_", sp_code, ".jpg"), width=800, height=600)
   hist(pooled_total_vector, breaks=50, main=paste("Model Averaged Total Abundance:", sp_name), 
        xlab="Total Abundance", col="lightgray", border="white")
   
@@ -188,6 +189,7 @@ for (sp_name in species_list) {
   sp_poly <- poly
   sp_poly$Pred_Abund <- grid_mean
   sp_poly$Pred_SD <- grid_sd
+  sp_poly$Pred_CV <- grid_cv
   
   vect_poly <- vect(sp_poly)
   template <- rast(ext(vect_poly), resolution = c(1000, 1000), crs = crs(vect_poly))
@@ -201,6 +203,11 @@ for (sp_name in species_list) {
   out_name_sd <- paste0("Results/Maps/SD_Abundance_", sp_code, ".tif")
   writeRaster(r_sd, out_name_sd, overwrite=TRUE)
   cat("  Saved:", out_name_sd, "\n")
+  
+  r_cv <- rasterize(vect_poly, template, field = "Pred_CV")
+  out_name_cv <- paste0("Results/Maps/CV_Abundance_", sp_code, ".tif")
+  writeRaster(r_cv, out_name_cv, overwrite=TRUE)
+  cat("  Saved:", out_name_cv, "\n")
   
   # Free up memory
   rm(pooled_abund_matrix, pooled_abund_list, samps, s_obj)
