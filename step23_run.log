@@ -75,3 +75,25 @@ Evaluating Spatial variants for the top 5 NoSpatial models.
 [17:43:38] Model 5/5: slope + DE
 [17:43:38]   Compiling NIMBLE model fresh (avoids memory leak)...
 [17:46:58]   Compilation done. Starting MCMC...
+[21:05:09]   -> WAIC = 693.99, TOTAL_ABUND median = 16614.9
+[21:05:19]   Memory after cleanup: 3175 MB used
+
+Global Top 5 models for Muntjac:
+  Species Rank                   Covariates     wAIC Delta_wAIC    Weight
+1 Muntjac    1                 elev + slope 692.2161  0.0000000 0.2080824
+2 Muntjac    2                        slope 692.4444  0.2282602 0.1856390
+3 Muntjac    3      dist_str + elev + slope 692.7147  0.4985915 0.1621689
+4 Muntjac    4 dist_str + elev + slope + BB 693.0338  0.8176805 0.1382542
+5 Muntjac    5                   slope + DE 693.1576  0.9414393 0.1299584
+       lppd     pWAIC      Type CI_2.5 CI_5 CI_25 CI_50 CI_75 CI_95 CI_97.5
+1 -335.7422 10.365864 NoSpatial     NA   NA    NA    NA    NA    NA      NA
+2 -337.5957  8.626476 NoSpatial     NA   NA    NA    NA    NA    NA      NA
+3 -333.9842 12.373136 NoSpatial     NA   NA    NA    NA    NA    NA      NA
+4 -332.7462 13.770689 NoSpatial     NA   NA    NA    NA    NA    NA      NA
+5 -335.9391 10.639698 NoSpatial     NA   NA    NA    NA    NA    NA      NA
+[21:05:22] Saved intermediate results for Muntjac.
+
+========================================================================
+FINAL COMPARISON COMPLETE
+========================================================================
+Saved to 'Results/Final_Model_Comparison.csv'.
