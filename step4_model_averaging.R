@@ -25,7 +25,7 @@ final_results_list <- lapply(results_files, function(f) {
 final_results <- bind_rows(final_results_list) %>% distinct()
 
 species_list <- unique(final_results$Species)
-all_species_codes <- c("Banteng" = "BTG", "Sambar deer" = "SBR", "Gaur" = "GAR", "Muntjac" = "MJK")
+all_species_codes <- c("Banteng" = "BTG", "Sambar deer" = "SBR", "Gaur" = "GAR", "Muntjac" = "MJK", "Wild boar" = "PIG")
 
 # Rename existing _Rank files to _GlobalRank files based on NoSpatial covariates
 cat("\nChecking for legacy _Rank files to rename to _GlobalRank...\n")

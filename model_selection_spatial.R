@@ -21,8 +21,8 @@ data_land <- data_land_orig[,c('grid_id', 'dist_str', 'ndvi_cv', 'elev', 'slope'
 data_prop <- read.csv('TRidentity.csv')
 
 # Define species and covariates
-all_species <- c("BTG", "SBR", "GAR", "MJK")
-species_names <- c(BTG = "Banteng", SBR = "Sambar deer", GAR = "Gaur", MJK = "Muntjac")
+all_species <- c("BTG", "SBR", "GAR", "MJK", "PIG")
+species_names <- c(BTG = "Banteng", SBR = "Sambar deer", GAR = "Gaur", MJK = "Muntjac", PIG = "Wild boar")
 covar_names <- colnames(data_land)[-1] # dist_str, ndvi_cv, elev, slope, BB, DD, DE
 n_covar <- length(covar_names)
 

@@ -46,7 +46,7 @@ nospatial_results <- read.csv("Results/Model_Selection_Summary.csv", stringsAsFa
 final_all_species_results <- list()
 
 species_list <- unique(nospatial_results$Species)
-all_species_codes <- c("Banteng" = "BTG", "Sambar deer" = "SBR", "Gaur" = "GAR", "Muntjac" = "MJK")
+all_species_codes <- c("Banteng" = "BTG", "Sambar deer" = "SBR", "Gaur" = "GAR", "Muntjac" = "MJK", "Wild boar" = "PIG")
 
 # Check for already-completed species (crash recovery)
 completed_species <- c()
