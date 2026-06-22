@@ -163,8 +163,10 @@ for (sp_name in species_list) {
   # Plot Histogram
   cat("  Saving Histogram...\n")
   jpeg(paste0("Results/Posteriors/TotalAbundance_Hist_", sp_code, ".jpg"), width=800, height=600)
-  hist(pooled_total_vector, breaks=50, main=paste("Model Averaged Total Abundance:", sp_name), 
-       xlab="Total Abundance", col="lightgray", border="white")
+  x_max <- quantile(pooled_total_vector, probs = 0.975) * 1.15
+  plot_data <- pooled_total_vector[pooled_total_vector <= x_max]
+  hist(plot_data, breaks=50, main=paste("Model Averaged Total Abundance:", sp_name), 
+       xlab="Total Abundance (Truncated at 97.5th %ile * 1.15)", col="lightgray", border="white", xlim=c(min(plot_data), x_max))
   
   # Median line
   abline(v=total_median, col="blue", lwd=2)

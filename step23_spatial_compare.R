@@ -240,9 +240,11 @@ for (sp_name in species_list) {
       # Calculate CI
       quants <- quantile(res$total_abund_samples, probs = c(0.025, 0.05, 0.25, 0.50, 0.75, 0.95, 0.975))
       
-      # Save Posterior plot
       jpeg(sprintf("Results/Posteriors/Posterior_%s_Rank%d.jpg", sp_code, rank), width=800, height=600)
-      hist(res$total_abund_samples, breaks=50, main=sprintf("Total Abundance Posterior: %s (Rank %d)", sp_name, rank), xlab="Total Abundance", col="lightgray", border="white")
+      x_max <- as.numeric(quants["97.5%"]) * 1.15
+      plot_data <- res$total_abund_samples[res$total_abund_samples <= x_max]
+      hist(plot_data, breaks=50, main=sprintf("Total Abundance Posterior: %s (Rank %d)", sp_name, rank), 
+           xlab="Total Abundance (Truncated at 97.5th %ile * 1.15)", col="lightgray", border="white", xlim=c(min(plot_data), x_max))
       
       # Median
       abline(v=quants["50%"], col="blue", lwd=2)
