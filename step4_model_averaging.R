@@ -60,9 +60,9 @@ for (sp_name in species_list) {
 }
 cat("Renaming check complete.\n")
 
-# Create output dir for tiffs
-if(!dir.exists("Results/Maps")) {
-  dir.create("Results/Maps", recursive=TRUE)
+# Create output dir for averaging results
+if(!dir.exists("Results/Averaging")) {
+  dir.create("Results/Averaging", recursive=TRUE)
 }
 
 # Number of total pooled samples we want for final calculation
@@ -78,12 +78,14 @@ for (sp_name in species_list) {
   # Select models to average (Delta_wAIC <= 2)
   sp_res <- final_results %>% filter(Species == sp_name, Delta_wAIC <= 2) %>% arrange(Rank)
   
-  # We can only average Spatial models because NoSpatial models do not have ABUND stored
-  sp_res <- sp_res %>% filter(Type == "Spatial")
-  
   if (nrow(sp_res) == 0) {
-    cat("No Spatial models with Delta_wAIC <= 2 found for", sp_name, "\n")
+    cat("No models with Delta_wAIC <= 2 found for", sp_name, "\n")
     next
+  }
+  
+  has_spatial <- any(sp_res$Type == "Spatial")
+  if (!has_spatial) {
+    cat("  Note: Only NoSpatial models found. Will skip mapping but will average TOTAL_ABUND.\n")
   }
   
   # Recalculate normalized weights
@@ -117,22 +119,23 @@ for (sp_name in species_list) {
       # Randomly sample rows from MCMC
       draw_idx <- sample(1:nrow(samps), n_draw, replace = TRUE)
       
-      # Extract ABUND columns
-      abund_cols <- grep("^ABUND\\[", colnames(samps))
-      drawn_abund <- samps[draw_idx, abund_cols]
-      pooled_abund_list[[i]] <- drawn_abund
+      # Extract ABUND columns if Spatial
+      if (sp_res$Type[i] == "Spatial") {
+        abund_cols <- grep("^ABUND\\[", colnames(samps))
+        drawn_abund <- samps[draw_idx, abund_cols]
+        pooled_abund_list[[length(pooled_abund_list) + 1]] <- drawn_abund
+      }
       
       # Extract TOTAL_ABUND
       drawn_total <- samps[draw_idx, "TOTAL_ABUND"]
-      pooled_total_list[[i]] <- drawn_total
+      pooled_total_list[[length(pooled_total_list) + 1]] <- drawn_total
     }
   }
   
   # Combine pooled samples
-  pooled_abund_matrix <- do.call(rbind, pooled_abund_list)
   pooled_total_vector <- unlist(pooled_total_list)
   
-  actual_samples <- nrow(pooled_abund_matrix)
+  actual_samples <- length(pooled_total_vector)
   cat(sprintf("\n  Pooled a total of %d MCMC samples across models.\n", actual_samples))
   
   if (actual_samples == 0) {
@@ -140,11 +143,15 @@ for (sp_name in species_list) {
     next
   }
   
-  # Calculate grid-wise Mean and SD
-  cat("  Calculating Grid-wise Variance...\n")
-  grid_mean <- apply(pooled_abund_matrix, 2, mean)
-  grid_sd   <- apply(pooled_abund_matrix, 2, sd)
-  grid_cv   <- ifelse(grid_mean == 0, 0, grid_sd / grid_mean)
+  if (length(pooled_abund_list) > 0) {
+    pooled_abund_matrix <- do.call(rbind, pooled_abund_list)
+    cat("  Calculating Grid-wise Variance...\n")
+    grid_mean <- apply(pooled_abund_matrix, 2, mean)
+    grid_sd   <- apply(pooled_abund_matrix, 2, sd)
+    grid_cv   <- ifelse(grid_mean == 0, 0, grid_sd / grid_mean)
+  } else {
+    grid_mean <- NULL
+  }
   
   # Calculate Total Abundance stats
   total_mean <- mean(pooled_total_vector)
@@ -162,7 +169,7 @@ for (sp_name in species_list) {
   
   # Plot Histogram
   cat("  Saving Histogram...\n")
-  jpeg(paste0("Results/Posteriors/TotalAbundance_Hist_", sp_code, ".jpg"), width=800, height=600)
+  jpeg(paste0("Results/Averaging/TotalAbundance_Hist_", sp_code, ".jpg"), width=800, height=600)
   x_max <- quantile(pooled_total_vector, probs = 0.975) * 1.15
   plot_data <- pooled_total_vector[pooled_total_vector <= x_max]
   hist(plot_data, breaks=50, main=paste("Model Averaged Total Abundance:", sp_name), 
@@ -186,33 +193,39 @@ for (sp_name in species_list) {
   
   dev.off()
   
-  # Export to GeoTIFF
-  cat("  Exporting Maps...\n")
-  sp_poly <- poly
-  sp_poly$Pred_Abund <- grid_mean
-  sp_poly$Pred_SD <- grid_sd
-  sp_poly$Pred_CV <- grid_cv
-  
-  vect_poly <- vect(sp_poly)
-  template <- rast(ext(vect_poly), resolution = c(1000, 1000), crs = crs(vect_poly))
-  
-  r_abund <- rasterize(vect_poly, template, field = "Pred_Abund")
-  out_name_abund <- paste0("Results/Maps/Abundance_", sp_code, ".tif")
-  writeRaster(r_abund, out_name_abund, overwrite=TRUE)
-  cat("  Saved:", out_name_abund, "\n")
-  
-  r_sd <- rasterize(vect_poly, template, field = "Pred_SD")
-  out_name_sd <- paste0("Results/Maps/SD_Abundance_", sp_code, ".tif")
-  writeRaster(r_sd, out_name_sd, overwrite=TRUE)
-  cat("  Saved:", out_name_sd, "\n")
-  
-  r_cv <- rasterize(vect_poly, template, field = "Pred_CV")
-  out_name_cv <- paste0("Results/Maps/CV_Abundance_", sp_code, ".tif")
-  writeRaster(r_cv, out_name_cv, overwrite=TRUE)
-  cat("  Saved:", out_name_cv, "\n")
+  if (!is.null(grid_mean)) {
+    # Export to GeoTIFF
+    cat("  Exporting Maps...\n")
+    sp_poly <- poly
+    sp_poly$Pred_Abund <- grid_mean
+    sp_poly$Pred_SD <- grid_sd
+    sp_poly$Pred_CV <- grid_cv
+    
+    vect_poly <- vect(sp_poly)
+    template <- rast(ext(vect_poly), resolution = c(1000, 1000), crs = crs(vect_poly))
+    
+    r_abund <- rasterize(vect_poly, template, field = "Pred_Abund")
+    out_name_abund <- paste0("Results/Averaging/Abundance_", sp_code, ".tif")
+    writeRaster(r_abund, out_name_abund, overwrite=TRUE)
+    cat("  Saved:", out_name_abund, "\n")
+    
+    r_sd <- rasterize(vect_poly, template, field = "Pred_SD")
+    out_name_sd <- paste0("Results/Averaging/SD_Abundance_", sp_code, ".tif")
+    writeRaster(r_sd, out_name_sd, overwrite=TRUE)
+    cat("  Saved:", out_name_sd, "\n")
+    
+    r_cv <- rasterize(vect_poly, template, field = "Pred_CV")
+    out_name_cv <- paste0("Results/Averaging/CV_Abundance_", sp_code, ".tif")
+    writeRaster(r_cv, out_name_cv, overwrite=TRUE)
+    cat("  Saved:", out_name_cv, "\n")
+    
+    rm(pooled_abund_matrix)
+  } else {
+    cat("  Skipping map export (No Spatial models in top subset).\n")
+  }
   
   # Free up memory
-  rm(pooled_abund_matrix, pooled_abund_list, samps, s_obj)
+  rm(pooled_abund_list, samps, s_obj)
   gc()
 }
 
