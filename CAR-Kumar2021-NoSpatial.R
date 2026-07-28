@@ -51,7 +51,7 @@ distanceModelCode <- nimbleCode({
   muc ~ dunif(1, gs_max) # universal average cluster size (for truncated-Poisson)
   # sigma0 ~ dunif(1, 10) # sigma0 # try larger prior to avoid -Inf logProb error
   sigma0 ~ dnorm(3, sd = 2) # ***larger values - to prevent too low logProb (less than -1e12)
-  p ~ dnorm(0, sd = 1) # model parameter for sigma ~ group_size
+  p ~ dunif(0, 5) # model parameter for sigma ~ group_size (constrained p >= 0 so larger groups have larger detection range)
 
   ##### Model #####
 
