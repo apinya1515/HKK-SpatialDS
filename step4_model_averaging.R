@@ -101,13 +101,26 @@ for (sp_name in species_list) {
     covars_str <- sp_res$Covariates[i]
     weight <- sp_res$NormWeight[i]
     
-    rds_file <- sprintf("Results/Posteriors/Samples_%s_GlobalRank%d.rds", sp_code, model_rank)
-    if (!file.exists(rds_file)) {
-      cat(sprintf("  WARNING: Could not find MCMC samples %s (Global Rank %d). Skipping...\n", rds_file, model_rank))
+    rds_candidates <- c(
+      sprintf("Results/MCMC/MCMC_Samples_%s_Rank%d.rds", sp_code, model_rank),
+      sprintf("Results/Delta2_Models/Samples_%s_Rank%d.rds", sp_code, model_rank),
+      sprintf("Results/Posteriors/Samples_%s_GlobalRank%d.rds", sp_code, model_rank),
+      sprintf("Results/Posteriors/Samples_%s_Rank%d.rds", sp_code, model_rank),
+      sprintf("Results/MCMC/MCMC_Samples_%s.rds", sp_code)
+    )
+    rds_file <- NULL
+    for (cand in rds_candidates) {
+      if (file.exists(cand)) {
+        rds_file <- cand
+        break
+      }
+    }
+    if (is.null(rds_file)) {
+      cat(sprintf("  WARNING: Could not find MCMC samples for %s Global Rank %d. Skipping...\n", sp_code, model_rank))
       next
     }
     
-    cat("  Loading Global Rank", model_rank, "-", covars_str, "(Weight:", round(weight, 3), ")\n")
+    cat("  Loading Global Rank", model_rank, "-", covars_str, "from", rds_file, "(Weight:", round(weight, 3), ")\n")
     
     s_obj <- readRDS(rds_file)
     samps <- s_obj$samples
