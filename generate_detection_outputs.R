@@ -181,7 +181,13 @@ for (i in 1:nrow(delta2_models)) {
     sigma_cols <- sigma_cols[order(sigma_indices)]
     
     K_classes <- length(sigma_cols)
-    sigma_medians <- sort(apply(samples_matrix[, sigma_cols, drop = FALSE], 2, median))
+    sigma_medians <- apply(samples_matrix[, sigma_cols, drop = FALSE], 2, median)
+    # Check monotonicity: sigma should increase with group size class (larger groups detected farther)
+    if (any(diff(sigma_medians) < 0)) {
+      cat(sprintf("  WARNING: sigma values are NOT monotonically increasing for %s Rank %d!\n", sp_code, rank))
+      cat(sprintf("    sigma medians: %s\n", paste(round(sigma_medians, 2), collapse = ", ")))
+      cat("    This may indicate the p parameter posterior includes negative values.\n")
+    }
     
     gs_labels <- paste("Group Size Class", 1:K_classes)
     colors <- c("#1B9E77", "#D95F02", "#7570B3", "#E7298A", "#66A61E")
