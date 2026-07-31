@@ -9,15 +9,14 @@ library(gridExtra)
 library(viridis)
 library(coda)
 
+set.seed(42)
+
 cat("========================================================================\n")
 cat("GENERATING CAR SPATIAL RANDOM EFFECT MAPS FOR ALL SPATIAL MODELS\n")
 cat("========================================================================\n")
 
-car_dir_root <- "CAR_map"
-car_dir_res <- "Results/CAR_map"
-
-if (!dir.exists(car_dir_root)) dir.create(car_dir_root, recursive = TRUE)
-if (!dir.exists(car_dir_res)) dir.create(car_dir_res, recursive = TRUE)
+car_dir <- "Results/CAR_map"
+if (!dir.exists(car_dir)) dir.create(car_dir, recursive = TRUE)
 
 mcmc_dir <- "Results/MCMC"
 post_dir <- "Results/Posteriors"
@@ -150,10 +149,8 @@ for (i in 1:nrow(spatial_models)) {
     CAR_RelativeRisk = poly_sp$CAR_RR
   )
   
-  csv_file1 <- file.path(car_dir_root, sprintf("CAR_Summary_%s_Rank%d.csv", sp_code, rank))
-  csv_file2 <- file.path(car_dir_res, sprintf("CAR_Summary_%s_Rank%d.csv", sp_code, rank))
-  write.csv(car_csv, csv_file1, row.names = FALSE)
-  write.csv(car_csv, csv_file2, row.names = FALSE)
+  csv_file <- file.path(car_dir, sprintf("CAR_Summary_%s_Rank%d.csv", sp_code, rank))
+  write.csv(car_csv, csv_file, row.names = FALSE)
   
   # Limit color range for high contrast
   med_lim <- max(abs(quantile(poly_sp$CAR_Median, c(0.01, 0.99), na.rm=TRUE)))
@@ -194,13 +191,10 @@ for (i in 1:nrow(spatial_models)) {
   
   combined_map <- grid.arrange(p1, p2, p3, ncol = 3)
   
-  map_file1 <- file.path(car_dir_root, sprintf("CAR_Map_%s_Rank%d.png", sp_code, rank))
-  map_file2 <- file.path(car_dir_res, sprintf("CAR_Map_%s_Rank%d.png", sp_code, rank))
+  map_file <- file.path(car_dir, sprintf("CAR_Map_%s_Rank%d.png", sp_code, rank))
+  ggsave(map_file, combined_map, width = 15, height = 6, dpi = 300)
   
-  ggsave(map_file1, combined_map, width = 15, height = 6, dpi = 300)
-  ggsave(map_file2, combined_map, width = 15, height = 6, dpi = 300)
-  
-  cat(sprintf("  Saved CAR map: %s\n", map_file1))
+  cat(sprintf("  Saved CAR map: %s\n", map_file))
 }
 
 # Multi-species CAR Comparison Map
@@ -223,13 +217,10 @@ if (length(rank1_car_df) > 0) {
           axis.text = element_blank(),
           axis.ticks = element_blank())
   
-  multi_file1 <- file.path(car_dir_root, "CAR_Map_All_Species_Comparison.png")
-  multi_file2 <- file.path(car_dir_res, "CAR_Map_All_Species_Comparison.png")
+  multi_file <- file.path(car_dir, "CAR_Map_All_Species_Comparison.png")
+  ggsave(multi_file, p_multi, width = 14, height = 10, dpi = 300)
   
-  ggsave(multi_file1, p_multi, width = 14, height = 10, dpi = 300)
-  ggsave(multi_file2, p_multi, width = 14, height = 10, dpi = 300)
-  
-  cat(sprintf("  Saved Multi-Species CAR map: %s\n", multi_file1))
+  cat(sprintf("  Saved Multi-Species CAR map: %s\n", multi_file))
 }
 
 cat("\n========================================================================\n")

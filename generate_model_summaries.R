@@ -7,6 +7,8 @@ library(coda)
 library(dplyr)
 library(writexl)
 
+set.seed(42)
+
 cat("========================================================================\n")
 cat("GENERATING MODEL SUMMARIES & CONVERGENCE DIAGNOSTICS (RHAT, ESS, MCSE)\n")
 cat("========================================================================\n")

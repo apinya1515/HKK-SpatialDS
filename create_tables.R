@@ -8,6 +8,8 @@ library(dplyr)
 library(writexl)
 library(coda)
 
+set.seed(42)
+
 cat("========================================================================\n")
 cat("GENERATING DENSITY, COEFFICIENT & GROUP SIZE TABLES IN Results/tables/\n")
 cat("========================================================================\n")

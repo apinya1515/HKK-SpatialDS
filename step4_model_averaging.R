@@ -3,6 +3,9 @@ library(dplyr)
 library(coda)
 library(sf)
 library(terra)
+library(ggplot2)
+
+set.seed(42)
 
 options(nimbleVerbose = FALSE)
 
@@ -123,7 +126,19 @@ for (sp_name in species_list) {
     cat("  Loading Global Rank", model_rank, "-", covars_str, "from", rds_file, "(Weight:", round(weight, 3), ")\n")
     
     s_obj <- readRDS(rds_file)
-    samps <- s_obj$samples
+    extract_samples_matrix <- function(obj) {
+      if (is.matrix(obj)) return(obj)
+      if (is.list(obj)) {
+        if ("samples" %in% names(obj)) {
+          if (is.list(obj$samples)) return(do.call(rbind, obj$samples))
+          if (is.matrix(obj$samples)) return(obj$samples)
+        }
+        is_all_mats <- all(sapply(obj, is.matrix))
+        if (is_all_mats) return(do.call(rbind, obj))
+      }
+      return(as.matrix(obj))
+    }
+    samps <- extract_samples_matrix(s_obj)
     
     # Calculate how many samples to draw from this model
     n_draw <- round(TOTAL_SAMPLES * weight)
@@ -132,11 +147,13 @@ for (sp_name in species_list) {
       # Randomly sample rows from MCMC
       draw_idx <- sample(1:nrow(samps), n_draw, replace = TRUE)
       
-      # Extract ABUND columns if Spatial
+      # Extract ABUND/b_spatial columns if Spatial
       if (sp_res$Type[i] == "Spatial") {
-        abund_cols <- grep("^ABUND\\[", colnames(samps))
-        drawn_abund <- samps[draw_idx, abund_cols]
-        pooled_abund_list[[length(pooled_abund_list) + 1]] <- drawn_abund
+        abund_cols <- grep("^(ABUND|b_spatial)\\[", colnames(samps))
+        if (length(abund_cols) > 0) {
+          drawn_abund <- samps[draw_idx, abund_cols, drop = FALSE]
+          pooled_abund_list[[length(pooled_abund_list) + 1]] <- drawn_abund
+        }
       }
       
       # Extract TOTAL_ABUND
@@ -180,31 +197,55 @@ for (sp_name in species_list) {
   cat(sprintf("  95%% CI: %.1f - %.1f\n", total_ci[1], total_ci[2]))
   cat("  --------------------------------------\n")
   
-  # Plot Histogram
+  # Plot Histogram (Truncated at 99th percentile to prevent squishing from extreme tail outliers)
   cat("  Saving Histogram...\n")
-  jpeg(paste0("Results/Averaging/TotalAbundance_Hist_", sp_code, ".jpg"), width=800, height=600)
-  x_max <- quantile(pooled_total_vector, probs = 0.975) * 1.15
-  plot_data <- pooled_total_vector[pooled_total_vector <= x_max]
-  hist(plot_data, breaks=50, main=paste("Model Averaged Total Abundance:", sp_name), 
-       xlab="Total Abundance (Truncated at 97.5th %ile * 1.15)", col="lightgray", border="white", xlim=c(min(plot_data), x_max))
+  df_hist <- data.frame(Abundance = pooled_total_vector)
   
-  # Median line
-  abline(v=total_median, col="blue", lwd=2)
-  text(total_median, par("usr")[4]*0.9, paste("Median:", round(total_median, 1)), col="blue", pos=4)
+  q2.5_val <- total_ci[1]
+  q97.5_val <- total_ci[2]
+  q99_val <- quantile(pooled_total_vector, 0.99)
   
-  # 90% CI
-  abline(v=total_ci_90[1], col="green", lwd=2, lty=2)
-  abline(v=total_ci_90[2], col="green", lwd=2, lty=2)
-  text(total_ci_90[1], par("usr")[4]*0.8, paste("90% L:", round(total_ci_90[1], 1)), col="darkgreen", pos=2)
-  text(total_ci_90[2], par("usr")[4]*0.8, paste("90% U:", round(total_ci_90[2], 1)), col="darkgreen", pos=4)
+  # Set x-limits to 99th percentile * 1.25 so extreme outliers don't squish the plot
+  x_min_plot <- max(0, q2.5_val * 0.7)
+  x_max_plot <- q99_val * 1.25
   
-  # 95% CI
-  abline(v=total_ci[1], col="red", lwd=2, lty=2)
-  abline(v=total_ci[2], col="red", lwd=2, lty=2)
-  text(total_ci[1], par("usr")[4]*0.7, paste("95% L:", round(total_ci[1], 1)), col="red", pos=2)
-  text(total_ci[2], par("usr")[4]*0.7, paste("95% U:", round(total_ci[2], 1)), col="red", pos=4)
+  df_hist_filtered <- df_hist %>% filter(Abundance <= x_max_plot)
   
-  dev.off()
+  p_hist <- ggplot(df_hist_filtered, aes(x = Abundance)) +
+    geom_histogram(bins = 45, fill = "#85C1E9", color = "white", alpha = 0.85) +
+    # Mean Line (Solid Red)
+    geom_vline(xintercept = total_mean, color = "#D9534F", linewidth = 1.2, linetype = "solid") +
+    # Median Line (Dashed Blue)
+    geom_vline(xintercept = total_median, color = "#0275D8", linewidth = 1.2, linetype = "dashed") +
+    # 95% CI Lines (Dotted Dark Red)
+    geom_vline(xintercept = q2.5_val, color = "#A94442", linewidth = 1.0, linetype = "dotted") +
+    geom_vline(xintercept = q97.5_val, color = "#A94442", linewidth = 1.0, linetype = "dotted") +
+    # Staggered Text Annotations (Prevents text overlap and stays 100% inside plot)
+    annotate("text", x = total_mean, y = Inf, label = sprintf("Mean: %.1f", total_mean), 
+             color = "#D9534F", fontface = "bold", vjust = 2.2, hjust = -0.15, size = 3.8) +
+    annotate("text", x = total_median, y = Inf, label = sprintf("Median: %.1f", total_median), 
+             color = "#0275D8", fontface = "bold", vjust = 4.2, hjust = 1.15, size = 3.8) +
+    annotate("text", x = q2.5_val, y = Inf, label = sprintf("2.5%%: %.1f", q2.5_val), 
+             color = "#A94442", fontface = "bold", vjust = 6.2, hjust = 1.15, size = 3.6) +
+    annotate("text", x = q97.5_val, y = Inf, label = sprintf("97.5%%: %.1f", q97.5_val), 
+             color = "#A94442", fontface = "bold", vjust = 6.2, hjust = 1.15, size = 3.6) +
+    scale_x_continuous(limits = c(x_min_plot, x_max_plot), labels = scales::comma) +
+    scale_y_continuous(labels = scales::comma) +
+    theme_minimal(base_size = 13) +
+    theme(plot.title = element_text(face = "bold", size = 15),
+          plot.subtitle = element_text(size = 11, color = "gray30"),
+          axis.title = element_text(face = "bold"),
+          panel.grid.minor = element_blank(),
+          plot.margin = margin(15, 25, 15, 25)) +
+    labs(title = sprintf("Model-Averaged Total Abundance: %s", sp_name),
+         subtitle = sprintf("Mean (Red Solid): %.1f | Median (Blue Dashed): %.1f | 95%% CI: [%.1f, %.1f]",
+                            total_mean, total_median, q2.5_val, q97.5_val),
+         x = "Total Abundance (N)", y = "Frequency")
+  
+  hist_jpg <- paste0("Results/Averaging/TotalAbundance_Hist_", sp_code, ".jpg")
+  hist_png <- paste0("Results/Averaging/TotalAbundance_Hist_", sp_code, ".png")
+  ggsave(hist_jpg, p_hist, width = 9, height = 6.0, dpi = 300)
+  ggsave(hist_png, p_hist, width = 9, height = 6.0, dpi = 300)
   
   if (!is.null(grid_mean)) {
     # Export to GeoTIFF

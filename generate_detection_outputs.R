@@ -13,6 +13,8 @@ library(sf)
 library(spdep)
 library(writexl)
 
+set.seed(42)
+
 detection_dir <- "Results/detection"
 mcmc_dir <- "Results/MCMC"
 post_dir <- "Results/Posteriors"

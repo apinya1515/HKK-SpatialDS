@@ -175,13 +175,15 @@ for (sp_code in names(species_info)) {
 }
 
 cat("\n========================================================================\n")
-cat("ALL POSTERIORS SAVED! REGENERATING TABLES, DETECTION PLOTS & CAR MAPS...\n")
+cat("ALL POSTERIORS SAVED! REGENERATING TABLES, DETECTION PLOTS, CAR MAPS & MODEL SUMMARIES...\n")
 cat("========================================================================\n")
 
 source('create_tables.R')
 source('generate_detection_outputs.R')
 source('generate_car_maps.R')
+source('generate_model_summaries.R')
 
 cat("\n========================================================================\n")
-cat("ALL DONE! Results, detection plots, and CAR spatial maps generated.\n")
+cat("ALL DONE! Results, detection plots, CAR spatial maps, and model summaries generated.\n")
 cat("========================================================================\n")
+
