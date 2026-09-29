@@ -6,3 +6,4 @@ Study-Spatial-Line-Transect/
 *.rds
 .RDataTmp
 /.claude
+/Results/MCMC_rerun

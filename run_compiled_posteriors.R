@@ -1,4 +1,7 @@
 # run_compiled_posteriors.R
+# !! SUPERSEDED (29/09/2026) by rerun_models.R + run_rerun_queue.ps1 + finalize_rerun.ps1.
+# !! Running this OVERWRITES the converged samples in Results/MCMC with short, unconverged runs,
+# !! and its NoSpatial branch never applies the covariate mask (every NoSpatial rank = full model).
 # Compiled C++ MCMC posterior estimation for all 5 species
 # Uses corrected p ~ dunif(0, 5) prior for monotonic sigma
 # 5000 iterations, 2000 burnin, 2 chains => 6000 effective post-burnin samples

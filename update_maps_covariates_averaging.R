@@ -1,5 +1,5 @@
 # update_maps_covariates_averaging.R
-# Update Maps, Covariates, Density, and Averaging folders for Muntjac & all species
+# Update Maps (all Delta_wAIC <= 2 models), Density, and Averaging folders
 
 library(nimble)
 library(dplyr)
@@ -26,6 +26,7 @@ poly$ID <- seq(1:nrow(poly))
 data_land_orig <- read.csv('HKK_Cov1sqkm_.csv')
 covar_all <- c('dist_str', 'ndvi_cv', 'elev', 'slope', 'BB', 'DD', 'DE')
 X_all <- as.matrix(data_land_orig[, covar_all])
+X_all[X_all[, "ndvi_cv"] > 0.5, "ndvi_cv"] <- 0.5 # same cap as @data_prepare_011025.R
 
 # Standardize covariates as done in MCMC modeling
 cov_means <- colMeans(X_all, na.rm = TRUE)
@@ -46,22 +47,23 @@ extract_samples_matrix <- function(obj) {
   return(as.matrix(obj))
 }
 
-# Read Master Convergence Summary list
+# Read Master Convergence Summary list (all species; previously Muntjac only)
 delta2_models <- read.csv("Results/model_summary/Master_Model_Convergence_Summary.csv", stringsAsFactors = FALSE)
-mjk_models <- delta2_models %>% filter(Species == "Muntjac") %>% arrange(Rank)
+map_models <- delta2_models %>% arrange(Species, Rank)
 
-cat(sprintf("Found %d Muntjac models with Delta_wAIC <= 2.0\n\n", nrow(mjk_models)))
+cat(sprintf("Found %d models with Delta_wAIC <= 2.0\n\n", nrow(map_models)))
 
-for (i in 1:nrow(mjk_models)) {
-  rank <- mjk_models$Rank[i]
-  m_type <- mjk_models$Type[i]
-  covars_str <- mjk_models$Covariates[i]
-  delta_val <- mjk_models$Delta_wAIC[i]
-  
-  cat(sprintf("[%d/%d] Processing Muntjac Rank %d (%s: %s | Delta_wAIC = %.2f)...\n", 
-              i, nrow(mjk_models), rank, m_type, covars_str, delta_val))
-  
-  rds_file <- sprintf("Results/MCMC/MCMC_Samples_MJK_Rank%d.rds", rank)
+for (i in 1:nrow(map_models)) {
+  sp_code <- map_models$Species_Code[i]
+  rank <- map_models$Rank[i]
+  m_type <- map_models$Type[i]
+  covars_str <- map_models$Covariates[i]
+  delta_val <- map_models$Delta_wAIC[i]
+
+  cat(sprintf("[%d/%d] Processing %s Rank %d (%s: %s | Delta_wAIC = %.2f)...\n",
+              i, nrow(map_models), sp_code, rank, m_type, covars_str, delta_val))
+
+  rds_file <- sprintf("Results/MCMC/MCMC_Samples_%s_Rank%d.rds", sp_code, rank)
   if (!file.exists(rds_file)) {
     cat("  WARNING: RDS file not found:", rds_file, "\n")
     next
@@ -111,12 +113,14 @@ for (i in 1:nrow(mjk_models)) {
   template <- rast(ext(vect_poly), resolution = c(1000, 1000), crs = crs(vect_poly))
   r_abund <- rasterize(vect_poly, template, field = "Pred_Abund")
   
-  map_file1 <- sprintf("Results/Maps/Map_MJK_Rank%d.tif", rank)
-  map_file2 <- sprintf("Results/Maps/Map_MJK_GlobalRank%d.tif", rank)
-  writeRaster(r_abund, map_file1, overwrite = TRUE)
+  map_file2 <- sprintf("Results/Maps/Map_%s_GlobalRank%d.tif", sp_code, rank)
   writeRaster(r_abund, map_file2, overwrite = TRUE)
-  cat(sprintf("  Saved Abundance Maps: %s & %s\n", map_file1, map_file2))
-  
+  if (sp_code == "MJK") { # Muntjac maps have always also been saved under the _Rank name
+    map_file1 <- sprintf("Results/Maps/Map_MJK_Rank%d.tif", rank)
+    writeRaster(r_abund, map_file1, overwrite = TRUE)
+  }
+  cat(sprintf("  Saved Abundance Map: %s\n", map_file2))
+  rm(s_obj, samps, lin_pred, log_lambda_matrix, lambda_matrix); gc()
 }
 
 cat("\n========================================================================\n")

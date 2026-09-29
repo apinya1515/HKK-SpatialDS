@@ -1,0 +1,19 @@
+"Species","Species_Code","Rank","Type","Covariates","Chains","Iterations_per_chain","Burnin_per_chain","Thin","Draws_kept_per_chain","Rule","Max_Rhat_nonCAR","Max_Rhat_CAR_nodes","Rhat_sigma_spatial","Min_ESS_key","Min_ESS_param","Converged"
+"Banteng","BTG",1,"Spatial","dist_str + ndvi_cv + slope + BB",3,40000,20000,10,2000,"Rhat < 1.045 for every parameter; 30,000-100,000 iterations per chain",1.0054,1.0079,1,523,"beta[2]",TRUE
+"Banteng","BTG",2,"Spatial","dist_str + ndvi_cv + elev + BB + DE",3,40000,20000,10,2000,"Rhat < 1.045 for every parameter; 30,000-100,000 iterations per chain",1.0042,1.0226,1.0007,728,"beta[3]",TRUE
+"Banteng","BTG",3,"Spatial","dist_str + ndvi_cv + elev + slope + BB",3,30000,10000,10,2000,"Rhat < 1.045 for every parameter; 30,000-100,000 iterations per chain",1.002,1.01,1,702,"beta[2]",TRUE
+"Banteng","BTG",4,"Spatial","dist_str + ndvi_cv + elev + BB + DD",3,30000,10000,10,2000,"Rhat < 1.045 for every parameter; 30,000-100,000 iterations per chain",1.0048,1.0197,1.0001,684,"beta[2]",TRUE
+"Gaur","GAR",1,"Spatial","ndvi_cv + elev + DE",3,30000,10000,10,2000,"Rhat < 1.045 for every parameter; 30,000-100,000 iterations per chain",1.0045,1.0157,1.0001,1205,"beta[3]",TRUE
+"Gaur","GAR",2,"Spatial","ndvi_cv + elev + BB + DE",3,30000,10000,10,2000,"Rhat < 1.045 for every parameter; 30,000-100,000 iterations per chain",1.0097,1.0183,1,1336,"beta[3]",TRUE
+"Muntjac","MJK",1,"NoSpatial","elev + slope",3,30000,10000,10,2000,"Rhat < 1.045 for every parameter; 30,000-100,000 iterations per chain",1.0012,NA,NA,3825,"p",TRUE
+"Muntjac","MJK",2,"NoSpatial","slope",3,30000,10000,10,2000,"Rhat < 1.045 for every parameter; 30,000-100,000 iterations per chain",1.0002,NA,NA,3784,"p",TRUE
+"Muntjac","MJK",3,"NoSpatial","dist_str + elev + slope",3,30000,10000,10,2000,"Rhat < 1.045 for every parameter; 30,000-100,000 iterations per chain",1.0002,NA,NA,4053,"p",TRUE
+"Muntjac","MJK",4,"NoSpatial","dist_str + elev + slope + BB",3,30000,10000,10,2000,"Rhat < 1.045 for every parameter; 30,000-100,000 iterations per chain",1.0016,NA,NA,2450,"beta[5]",TRUE
+"Muntjac","MJK",5,"NoSpatial","slope + DE",3,30000,10000,10,2000,"Rhat < 1.045 for every parameter; 30,000-100,000 iterations per chain",1.0007,NA,NA,3563,"p",TRUE
+"Muntjac","MJK",6,"NoSpatial","ndvi_cv + slope",3,30000,10000,10,2000,"Rhat < 1.045 for every parameter; 30,000-100,000 iterations per chain",1.0004,NA,NA,3862,"p",TRUE
+"Muntjac","MJK",7,"Spatial","slope + DE",3,20000,10000,10,1000,"Rhat < 1.045 for every parameter; 30,000-100,000 iterations per chain",1.0025,1.0152,1.0014,458,"sigma_spatial",TRUE
+"Sambar deer","SBR",1,"Spatial","dist_str + ndvi_cv + elev + BB + DD",3,30000,10000,10,2000,"Rhat < 1.045 for every parameter; 30,000-100,000 iterations per chain",1.0065,1.0077,1,535,"beta[3]",TRUE
+"Sambar deer","SBR",2,"Spatial","ndvi_cv + elev + BB",3,30000,10000,10,2000,"Rhat < 1.045 for every parameter; 30,000-100,000 iterations per chain",1.0101,1.0076,1,529,"beta[3]",TRUE
+"Sambar deer","SBR",3,"Spatial","ndvi_cv + elev + BB + DD",3,30000,10000,10,2000,"Rhat < 1.045 for every parameter; 30,000-100,000 iterations per chain",1.0017,1.0124,1.0002,575,"TOTAL_ABUND",TRUE
+"Wild boar","PIG",1,"Spatial","slope",3,30000,10000,10,2000,"Rhat < 1.045 for every parameter; 30,000-100,000 iterations per chain",1.002,1.017,1.002,1808,"beta0",TRUE
+"Wild boar","PIG",2,"Spatial","slope + BB",3,30000,10000,10,2000,"Rhat < 1.045 for every parameter; 30,000-100,000 iterations per chain",1.0036,1.0171,1.0019,1708,"beta[5]",TRUE

@@ -34,13 +34,15 @@ probs_seq <- c(0.025, 0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.95, 0.975)
 master_summary_list <- list()
 all_species_tables <- list()
 
-# Vectorized Gelman-Rubin Rhat calculation for 2 chains
-calc_rhat_info <- function(c1, c2) {
-  n <- nrow(c1)
-  v1 <- apply(c1, 2, var)
-  v2 <- apply(c2, 2, var)
-  w <- 0.5 * (v1 + v2)
-  b_over_n <- (colMeans(c1) - colMeans(c2))^2 / 2
+# Vectorized Gelman-Rubin Rhat for m >= 2 chains (list of draws x params matrices).
+# W = mean within-chain variance, B/n = variance of the chain means (denominator m - 1).
+# For m = 2, B/n = (mean1 - mean2)^2 / 2, i.e. identical to the earlier 2-chain version.
+calc_rhat_info <- function(chains) {
+  n <- nrow(chains[[1]])
+  w <- Reduce(`+`, lapply(chains, function(ch) apply(ch, 2, var))) / length(chains)
+  means <- sapply(chains, colMeans)
+  if (is.null(dim(means))) means <- matrix(means, nrow = 1)
+  b_over_n <- apply(means, 1, var)
   var_hat <- ((n - 1) / n) * w + b_over_n
   rhat_pt <- ifelse(w == 0, 1.0, sqrt(pmax(1.0, var_hat / w)))
   
@@ -75,15 +77,13 @@ for (i in 1:nrow(delta2_df)) {
   s_obj <- readRDS(rds_path)
   
   if (is.list(s_obj) && length(s_obj) >= 2 && is.matrix(s_obj[[1]])) {
-    c1 <- s_obj[[1]]
-    c2 <- s_obj[[2]]
-    combined_mat <- rbind(c1, c2)
-    mcmc_list <- coda::as.mcmc.list(lapply(s_obj[1:2], coda::as.mcmc))
+    chains <- unname(as.list(s_obj)) # all chains (2 in older runs, 3 in the re-runs)
+    combined_mat <- do.call(rbind, chains)
+    mcmc_list <- coda::as.mcmc.list(lapply(chains, coda::as.mcmc))
   } else if (is.matrix(s_obj)) {
-    c1 <- s_obj[1:floor(nrow(s_obj)/2), ]
-    c2 <- s_obj[(floor(nrow(s_obj)/2)+1):nrow(s_obj), ]
+    chains <- list(s_obj[1:floor(nrow(s_obj)/2), ], s_obj[(floor(nrow(s_obj)/2)+1):nrow(s_obj), ])
     combined_mat <- s_obj
-    mcmc_list <- coda::as.mcmc.list(list(coda::as.mcmc(c1), coda::as.mcmc(c2)))
+    mcmc_list <- coda::as.mcmc.list(lapply(chains, coda::as.mcmc))
   } else {
     warning(sprintf("Unexpected MCMC sample structure in %s", rds_path))
     next
@@ -94,7 +94,7 @@ for (i in 1:nrow(delta2_df)) {
   spatial_params <- param_names[grepl("^b_spatial", param_names)]
   
   # Compute fast vectorized Rhat
-  rhat_info <- calc_rhat_info(c1[, non_spatial_params, drop=FALSE], c2[, non_spatial_params, drop=FALSE])
+  rhat_info <- calc_rhat_info(lapply(chains, function(ch) ch[, non_spatial_params, drop=FALSE]))
   
   # Compute ESS
   ess_vec <- coda::effectiveSize(mcmc_list[, non_spatial_params])
@@ -143,7 +143,7 @@ for (i in 1:nrow(delta2_df)) {
   sp_car_rhat_median <- NA
   
   if (length(spatial_params) > 0) {
-    sp_rhat_info <- calc_rhat_info(c1[, spatial_params, drop=FALSE], c2[, spatial_params, drop=FALSE])
+    sp_rhat_info <- calc_rhat_info(lapply(chains, function(ch) ch[, spatial_params, drop=FALSE]))
     sp_rhats <- sp_rhat_info$PointEst
     sp_car_rhat_mean <- mean(sp_rhats, na.rm = TRUE)
     sp_car_rhat_max <- max(sp_rhats, na.rm = TRUE)
