@@ -7,7 +7,8 @@
 #   Start-Process powershell -ArgumentList '-ExecutionPolicy Bypass -File run_rerun_queue.ps1' -WindowStyle Hidden
 
 # Each chain process commits ~2.9 GB (spatial); 3 chains x 4 models = 12 processes = ~35 GB.
-param([int]$MaxModels = 4, [int]$Chains = 3)
+# -AllCandidates: every model in Final_Model_Comparison.csv (for re-scoring WAIC), not only Delta_wAIC < 2
+param([int]$MaxModels = 4, [int]$Chains = 3, [switch]$AllCandidates)
 
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
@@ -19,9 +20,9 @@ function Log($m) { "[{0}] {1}" -f (Get-Date -Format 'MM-dd HH:mm:ss'), $m | Add-
 
 $codes = @{ 'Banteng' = 'BTG'; 'Sambar deer' = 'SBR'; 'Gaur' = 'GAR'; 'Muntjac' = 'MJK'; 'Wild boar' = 'PIG' }
 $queue = Import-Csv 'Results\Final_Model_Comparison.csv' |
-  Where-Object { [double]$_.Delta_wAIC -lt 2 } |
+  Where-Object { $AllCandidates -or [double]$_.Delta_wAIC -lt 2 } |
   ForEach-Object { [pscustomobject]@{ Sp = $codes[$_.Species]; Rank = [int]$_.Rank; Type = $_.Type } } |
-  Sort-Object Rank, Sp
+  Sort-Object @{ Expression = { $_.Type -ne 'Spatial' } }, Rank, Sp  # long spatial runs first
 Log ("Queue ({0} models): {1}" -f $queue.Count, (($queue | ForEach-Object { "$($_.Sp)_R$($_.Rank)" }) -join ', '))
 
 function Running-Models {

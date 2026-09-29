@@ -1,0 +1,19 @@
+"Species","Rank","Type","Covariates","wAIC","Delta_wAIC","Weight_all_candidates","Weight_within_Delta2","Total_Abundance_Mean","Total_Abundance_SD","Total_Abundance_95_CI","Overall_Convergence","Rescored_WAIC","Rescored_Delta_within_Delta2"
+"Banteng",1,"Spatial","dist_str + ndvi_cv + slope + BB",269.46,0,0.3423,0.3877,2991.3,2733.6,"[1301.4, 7345.7]","Fully Converged (Rhat < 1.05; CAR nodes < 1.10)",270.55,0
+"Banteng",2,"Spatial","dist_str + ndvi_cv + elev + BB + DE",270.58,1.11,0.1963,0.2224,3438,3674.9,"[1326.3, 10024.9]","Fully Converged (Rhat < 1.05; CAR nodes < 1.10)",271.06,0.51
+"Banteng",3,"Spatial","dist_str + ndvi_cv + elev + slope + BB",270.79,1.32,0.1765,0.2,3051.9,2558.6,"[1262.4, 8021.5]","Fully Converged (Rhat < 1.05; CAR nodes < 1.10)",271.72,1.16
+"Banteng",4,"Spatial","dist_str + ndvi_cv + elev + BB + DD",270.89,1.43,0.1677,0.1899,3183.9,3869.4,"[1084.3, 11314.3]","Fully Converged (Rhat < 1.05; CAR nodes < 1.10)",270.8,0.25
+"Gaur",1,"Spatial","ndvi_cv + elev + DE",162.44,0,0.6609,0.6904,4884.4,11153.7,"[1669.7, 15375.8]","Fully Converged (Rhat < 1.05; CAR nodes < 1.10)",165.91,2
+"Gaur",2,"Spatial","ndvi_cv + elev + BB + DE",164.04,1.6,0.2963,0.3096,4074.3,4261.1,"[1559.9, 11670.9]","Fully Converged (Rhat < 1.05; CAR nodes < 1.10)",163.9,0
+"Muntjac",1,"NoSpatial","elev + slope",692.22,0,0.2081,0.2081,12884.4,1174.3,"[10783.1, 15344.6]","Fully Converged (Rhat < 1.05; CAR nodes < 1.10)",785.87,0.24
+"Muntjac",2,"NoSpatial","slope",692.44,0.23,0.1856,0.1856,13752.8,1169.9,"[11566.2, 16144.0]","Fully Converged (Rhat < 1.05; CAR nodes < 1.10)",785.63,0
+"Muntjac",3,"NoSpatial","dist_str + elev + slope",692.71,0.5,0.1622,0.1622,13400.9,1283.2,"[11113.4, 16143.6]","Fully Converged (Rhat < 1.05; CAR nodes < 1.10)",786.44,0.81
+"Muntjac",4,"NoSpatial","dist_str + elev + slope + BB",693.03,0.82,0.1383,0.1383,13606.2,1359.1,"[11246.0, 16582.2]","Fully Converged (Rhat < 1.05; CAR nodes < 1.10)",787.54,1.91
+"Muntjac",5,"NoSpatial","slope + DE",693.16,0.94,0.13,0.13,13814.2,1186.5,"[11659.7, 16319.9]","Fully Converged (Rhat < 1.05; CAR nodes < 1.10)",786.41,0.77
+"Muntjac",6,"NoSpatial","ndvi_cv + slope",693.88,1.67,0.0904,0.0904,13323.4,1188.8,"[11151.2, 15778.5]","Fully Converged (Rhat < 1.05; CAR nodes < 1.10)",787.54,1.9
+"Muntjac",7,"Spatial","slope + DE",693.99,1.78,0.0855,0.0855,14199.6,1614.1,"[11629.3, 17594.2]","Fully Converged (Rhat < 1.05; CAR nodes < 1.10)",794.07,8.43
+"Sambar deer",1,"Spatial","dist_str + ndvi_cv + elev + BB + DD",512.59,0,0.3985,0.4774,9335.4,1975.3,"[6418.4, 13976.7]","Fully Converged (Rhat < 1.05; CAR nodes < 1.10)",553.65,1.78
+"Sambar deer",2,"Spatial","ndvi_cv + elev + BB",513.54,0.95,0.2483,0.2974,9459.4,1774.4,"[6725.2, 13610.7]","Fully Converged (Rhat < 1.05; CAR nodes < 1.10)",551.87,0
+"Sambar deer",3,"Spatial","ndvi_cv + elev + BB + DD",514.09,1.5,0.188,0.2252,9301.8,1823.9,"[6534.1, 13540.1]","Fully Converged (Rhat < 1.05; CAR nodes < 1.10)",553.11,1.24
+"Wild boar",1,"Spatial","slope",332.19,0,0.5273,0.5843,6276,2486.2,"[3309.6, 12619.3]","Fully Converged (Rhat < 1.05; CAR nodes < 1.10)",329.92,0
+"Wild boar",2,"Spatial","slope + BB",332.87,0.68,0.3751,0.4157,6214.7,2723.1,"[3321.0, 12371.8]","Fully Converged (Rhat < 1.05; CAR nodes < 1.10)",332.22,2.3

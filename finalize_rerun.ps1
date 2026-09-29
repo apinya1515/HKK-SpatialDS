@@ -45,9 +45,9 @@ $steps = @(
   @('generate_car_maps.R'),                 # CAR_map
   @('generate_covariate_boxplots.R'),       # Covariates
   @('update_maps_covariates_averaging.R'),  # Maps + Density + Averaging
-  @('generate_presentation_outputs.R'),     # Community density, heatmap, synthesis tables
+  @('compute_waic_posthoc.R'),              # tables/WAIC_Rerun_Comparison.csv (read by the next step)
+  @('generate_presentation_outputs.R'),     # Community density, heatmap, model-selection & synthesis tables
   @('generate_traceplots.R'),               # traceplots
-  @('compute_waic_posthoc.R'),              # tables/WAIC_Rerun_Comparison.csv
   @('summarize_rerun.R', $archive)          # model_summary/Rerun_*.csv
 )
 foreach ($s in $steps) {

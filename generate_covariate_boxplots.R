@@ -71,18 +71,6 @@ for (i in 1:nrow(master_df)) {
   beta_mat <- samps[, beta_cols, drop = FALSE]
   colnames(beta_mat) <- covar_names[1:ncol(beta_mat)]
   
-  # Extract inclusion indicator w parameters if present in MCMC
-  w_cols <- grep("^w\\[", colnames(samps), value = TRUE)
-  if (length(w_cols) >= 7) {
-    w_cols <- w_cols[1:7]
-    w_mat <- samps[, w_cols, drop = FALSE]
-    colnames(w_mat) <- covar_names[1:ncol(w_mat)]
-    w_prop <- colMeans(w_mat)
-  } else {
-    w_prop <- setNames(rep(0, length(covar_names)), covar_names)
-    w_prop[active_covars] <- 1.0
-  }
-  
   # Subsample for smooth ggplot jitter plotting (600 draws)
   set.seed(42 + i)
   sub_idx <- sample(1:nrow(beta_mat), min(600, nrow(beta_mat)))
@@ -179,36 +167,8 @@ for (i in 1:nrow(master_df)) {
   ggsave(jpg_box2, p_box, width = 10, height = 6.5, dpi = 300)
   cat(sprintf("  Saved Pure Covariate Boxplot with Jitter: %s\n", png_box1))
   
-  # ------------------------------------------------------------------------
-  # B. Image 2: Dedicated Inclusion Probabilities Figure
-  # ------------------------------------------------------------------------
-  df_w <- data.frame(
-    Covariate = factor(covar_names, levels = covar_names),
-    InclusionProb = as.numeric(w_prop[covar_names]),
-    IsActive = ifelse(covar_names %in% active_covars, "Included (w = 1.0)", "Not Included (w = 0.0)"),
-    stringsAsFactors = FALSE
-  )
-  
-  p_incl <- ggplot(df_w, aes(x = Covariate, y = InclusionProb, fill = IsActive)) +
-    geom_bar(stat = "identity", width = 0.55, color = "black", linewidth = 0.5) +
-    geom_hline(yintercept = 0.5, linetype = "dashed", color = "darkgreen", linewidth = 0.8) +
-    geom_text(aes(label = sprintf("%.2f", InclusionProb)), vjust = -0.4, fontface = "bold", size = 4.0) +
-    scale_fill_manual(values = c("Included (w = 1.0)" = "#2CA02C", "Not Included (w = 0.0)" = "#E377C2")) +
-    scale_y_continuous(limits = c(0, 1.15), breaks = seq(0, 1, 0.2)) +
-    theme_minimal(base_size = 13) +
-    theme(plot.title = element_text(face = "bold", size = 15),
-          plot.subtitle = element_text(size = 11, color = "gray30"),
-          axis.text.x = element_text(angle = 45, hjust = 1, face = "bold", size = 11),
-          axis.title = element_text(face = "bold"),
-          legend.position = "top",
-          panel.grid.major.x = element_blank()) +
-    labs(title = sprintf("Covariate Inclusion Probabilities: %s (Rank %d)", sp_name, rank),
-         subtitle = sprintf("Model (%s): %s | Active covariates in specified model formulas have fixed w = 1.0 (100%% inclusion)", m_type, covars_str),
-         x = "Covariate", y = "Inclusion Probability P(w_j = 1)")
-  
-  png_w1 <- sprintf("Results/Covariates/Inclusion_Probabilities_%s_Rank%d.png", sp_code, rank)
-  ggsave(png_w1, p_incl, width = 9, height = 5.5, dpi = 300)
-  cat(sprintf("  Saved Inclusion Probabilities Plot: %s\n", png_w1))
+  # (Inclusion-probability figures removed: covariates are fixed per model, so P(w = 1) is 0/1 by
+  #  construction and was not estimated.)
 }
 
 # ------------------------------------------------------------------------

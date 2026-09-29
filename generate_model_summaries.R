@@ -194,16 +194,20 @@ for (i in 1:nrow(delta2_df)) {
   abund_q97.5 <- quantile(abund_samples, 0.975)
   
   # Calculate Key parameter Max Rhat (beta, beta0, p, muc, sigma0, TOTAL_ABUND)
-  key_pnames <- intersect(c("beta0", "beta[1]", "beta[2]", "beta[3]", "beta[4]", "beta[5]", "beta[6]", "beta[7]", "muc", "p", "sigma0", "TOTAL_ABUND", "AGS"), non_spatial_params)
+  key_pnames <- intersect(c("beta0", "beta[1]", "beta[2]", "beta[3]", "beta[4]", "beta[5]", "beta[6]", "beta[7]", "muc", "p", "sigma0", "TOTAL_ABUND", "AGS", "sigma_spatial"), non_spatial_params)
   key_rhats <- rhat_info[key_pnames, "PointEst"]
   max_key_rhat <- max(key_rhats, na.rm = TRUE)
   
-  overall_status <- if (max_key_rhat < 1.05 && (is.na(sp_car_rhat_max) || sp_car_rhat_max < 1.10)) {
-    "Fully Converged (Rhat < 1.05)"
-  } else if (max_key_rhat < 1.10) {
+  # key parameters now include sigma_spatial; every level also checks the CAR nodes
+  car_max <- if (is.na(sp_car_rhat_max)) 1 else sp_car_rhat_max
+  overall_status <- if (max_key_rhat < 1.05 && car_max < 1.10) {
+    "Fully Converged (Rhat < 1.05; CAR nodes < 1.10)"
+  } else if (max_key_rhat < 1.10 && car_max < 1.10) {
     "Acceptable Convergence (Rhat < 1.10)"
-  } else {
+  } else if (max_key_rhat <= 1.25 && car_max <= 1.25) {
     "Adequate (Rhat <= 1.25)"
+  } else {
+    "Not converged (Rhat > 1.25)"
   }
   
   master_summary_list[[i]] <- data.frame(

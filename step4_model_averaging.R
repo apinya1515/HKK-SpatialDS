@@ -15,6 +15,24 @@ poly$ID <- seq(1:nrow(poly))
 
 cat("Starting Step 4: Model Averaging via MCMC Sample Pooling\n")
 
+# Covariates exactly as in @data_prepare_011025.R (ndvi_cv capped at 0.5, then standardised) and
+# water mask, to rebuild grid-level INDIVIDUAL abundance per draw:
+#   ABUND[l] = exp(beta0 + X[l, active] %*% beta[active] + b_spatial[l]) * water_mask[l] * AGS
+# (sum over grids = TOTAL_ABUND). Previously the maps pooled b_spatial alone (the CAR effect).
+covar_all <- c('dist_str', 'ndvi_cv', 'elev', 'slope', 'BB', 'DD', 'DE')
+land_orig <- read.csv('HKK_Cov1sqkm_.csv')
+X_all <- as.matrix(land_orig[, covar_all])
+X_all[X_all[, "ndvi_cv"] > 0.5, "ndvi_cv"] <- 0.5
+X_std <- scale(X_all)
+water_mask <- ifelse(land_orig$WA > 0.35, 0, 1)
+grid_abundance <- function(samps, covars_str) {
+  act <- which(covar_all %in% trimws(unlist(strsplit(covars_str, "\\+"))))
+  lin <- samps[, sprintf("beta[%d]", act), drop = FALSE] %*% t(X_std[, act, drop = FALSE]) + samps[, "beta0"]
+  b_cols <- sprintf("b_spatial[%d]", seq_len(nrow(X_std)))
+  if (all(b_cols %in% colnames(samps))) lin <- lin + samps[, b_cols, drop = FALSE]  # by name: grid order guaranteed
+  sweep(exp(lin), 2, water_mask, "*") * samps[, "AGS"]
+}
+
 # Try to find Results/Final_Model_Comparison.csv or Intermediate files
 results_files <- list.files("Results", pattern = "Comparison", full.names = TRUE)
 if (length(results_files) == 0) {
@@ -86,14 +104,10 @@ for (sp_name in species_list) {
     next
   }
   
-  has_spatial <- any(sp_res$Type == "Spatial")
-  if (!has_spatial) {
-    cat("  Note: Only NoSpatial models found. Will skip mapping but will average TOTAL_ABUND.\n")
-  }
   
   # Recalculate normalized weights
   sp_res$NormWeight <- exp(-0.5 * sp_res$Delta_wAIC) / sum(exp(-0.5 * sp_res$Delta_wAIC))
-  cat(sprintf("Averaging %d Spatial models...\n", nrow(sp_res)))
+  cat(sprintf("Averaging %d models (Delta_wAIC <= 2)...\n", nrow(sp_res)))
   
   # Initialize lists for pooled samples
   pooled_abund_list <- list()
@@ -147,14 +161,9 @@ for (sp_name in species_list) {
       # Randomly sample rows from MCMC
       draw_idx <- sample(1:nrow(samps), n_draw, replace = TRUE)
       
-      # Extract ABUND/b_spatial columns if Spatial
-      if (sp_res$Type[i] == "Spatial") {
-        abund_cols <- grep("^(ABUND|b_spatial)\\[", colnames(samps))
-        if (length(abund_cols) > 0) {
-          drawn_abund <- samps[draw_idx, abund_cols, drop = FALSE]
-          pooled_abund_list[[length(pooled_abund_list) + 1]] <- drawn_abund
-        }
-      }
+      # Grid-level individual abundance for the drawn samples (Spatial and NoSpatial models)
+      drawn_abund <- grid_abundance(samps[draw_idx, , drop = FALSE], covars_str)
+      pooled_abund_list[[length(pooled_abund_list) + 1]] <- drawn_abund
       
       # Extract TOTAL_ABUND
       drawn_total <- samps[draw_idx, "TOTAL_ABUND"]
@@ -178,7 +187,7 @@ for (sp_name in species_list) {
     cat("  Calculating Grid-wise Variance...\n")
     grid_mean <- apply(pooled_abund_matrix, 2, mean)
     grid_sd   <- apply(pooled_abund_matrix, 2, sd)
-    grid_cv   <- ifelse(grid_mean == 0, 0, grid_sd / grid_mean)
+    grid_cv   <- ifelse(grid_mean == 0, NA, grid_sd / grid_mean) # NA for water-masked cells
   } else {
     grid_mean <- NULL
   }

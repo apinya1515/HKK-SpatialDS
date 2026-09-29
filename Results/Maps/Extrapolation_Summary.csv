@@ -1,0 +1,19 @@
+"Species","Species_Code","Rank","Type","Covariates","Cells_Extrapolated","Cells_Total","Share_of_Mean_Abundance_in_Extrapolated_Cells","Total_Abundance_Mean","Total_Abundance_Median","Total_Abundance_Median_Excluding_Extrapolated"
+"Banteng","BTG",1,"Spatial","dist_str + ndvi_cv + slope + BB",1230,3013,0.628,2991.3,2467.5,1080.3
+"Banteng","BTG",2,"Spatial","dist_str + ndvi_cv + elev + BB + DE",1193,3013,0.5949,3438,2670.4,1317.5
+"Banteng","BTG",3,"Spatial","dist_str + ndvi_cv + elev + slope + BB",1353,3013,0.6424,3051.9,2520.9,1063.4
+"Banteng","BTG",4,"Spatial","dist_str + ndvi_cv + elev + BB + DD",1216,3013,0.6158,3183.9,2271,1182.5
+"Gaur","GAR",1,"Spatial","ndvi_cv + elev + DE",945,3013,0.4765,4884.4,3547.9,2231.1
+"Gaur","GAR",2,"Spatial","ndvi_cv + elev + BB + DE",983,3013,0.4137,4074.3,3214.3,2113
+"Muntjac","MJK",1,"NoSpatial","elev + slope",932,3013,0.2096,12884.4,12830.4,10169
+"Muntjac","MJK",2,"NoSpatial","slope",300,3013,0.0569,13752.8,13696.9,12929.5
+"Muntjac","MJK",3,"NoSpatial","dist_str + elev + slope",1146,3013,0.2991,13400.9,13355.3,9364.8
+"Muntjac","MJK",4,"NoSpatial","dist_str + elev + slope + BB",1174,3013,0.3082,13606.2,13521.3,9387.4
+"Muntjac","MJK",5,"NoSpatial","slope + DE",300,3013,0.0608,13814.2,13764.1,12936.3
+"Muntjac","MJK",6,"NoSpatial","ndvi_cv + slope",960,3013,0.2631,13323.4,13254.1,9780.4
+"Muntjac","MJK",7,"Spatial","slope + DE",300,3013,0.0631,14199.6,14053.1,13179.3
+"Sambar deer","SBR",1,"Spatial","dist_str + ndvi_cv + elev + BB + DD",1216,3013,0.1585,9335.4,9037.8,7682.4
+"Sambar deer","SBR",2,"Spatial","ndvi_cv + elev + BB",983,3013,0.0897,9459.4,9243.8,8421.2
+"Sambar deer","SBR",3,"Spatial","ndvi_cv + elev + BB + DD",1006,3013,0.0902,9301.8,9056.5,8252
+"Wild boar","PIG",1,"Spatial","slope",300,3013,0.2638,6276,5759.3,4478.5
+"Wild boar","PIG",2,"Spatial","slope + BB",335,3013,0.2613,6214.7,5656.7,4428.1

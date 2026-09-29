@@ -114,7 +114,10 @@ for (sp_name in names(species_codes)) {
     
     # 2. Total Cluster Abundance & Cluster Density
     z_cols <- grep("^z\\[", colnames(samps))
-    cluster_abund <- if (length(z_cols) > 0) rowSums(samps[, z_cols]) else ind_abund / (mean(data_tr_all$Gz.sz[data_tr_all$Species == sp_code], na.rm=TRUE))
+    # groups = individuals / model average group size, per draw (as in generate_density_outputs.R);
+    # previously divided by the OBSERVED mean group size, which is biased (large groups are detected more)
+    ags_draws <- if ("AGS" %in% colnames(samps)) samps[, "AGS"] else samps[, "muc"] / (1 - exp(-samps[, "muc"]))
+    cluster_abund <- if (length(z_cols) > 0) rowSums(samps[, z_cols]) else ind_abund / ags_draws
     cluster_density <- cluster_abund / study_area_km2
     
     t_cls_dens  <- cbind(Species = sp_name, Metric = "Cluster Density (groups/km2)", compute_sample_stats(cluster_density))

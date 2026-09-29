@@ -199,7 +199,7 @@ for (g in groups) {
   text(0, 0.38, sprintf("%s  |  %s", sub_txt, win_txt), adj = 0, cex = 0.85, col = ink_secondary)
   legend(x = 0.78, y = 0.95, legend = paste("Chain", seq_len(n_ch)), col = chain_cols[seq_len(n_ch)], lwd = 2,
          bty = "n", cex = 0.85, text.col = ink_primary, horiz = TRUE, xjust = 0)
-  text(1, 0.12, sprintf("▲ = Rhat ≥ %.2f", rhat_flag_at), adj = 1, cex = 0.7, col = ink_muted)
+  text(1, 0.12, sprintf("▲ = Rhat ≥ %.4g", rhat_flag_at), adj = 1, cex = 0.7, col = ink_muted)
 
   for (k in seq_len(n_par)) {
     draw_panel(lapply(traces[[k]]$vals, function(v) v[win]), iter[win], names(traces)[k],

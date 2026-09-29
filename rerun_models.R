@@ -119,7 +119,11 @@ load_kept <- function(k) {
       colnames(d$b_spatial) <- sprintf("b_spatial[%d]", seq_len(ncol(d$b_spatial)))
       m <- cbind(m[, !grepl("^u\\[", colnames(m)), drop = FALSE], TOTAL_ABUND = d$TOTAL_ABUND, d$b_spatial)
     }
-    m[, sort(colnames(m))]
+    # natural NIMBLE order (b_spatial[2] before b_spatial[10]); scripts read b_spatial positionally
+    cn <- colnames(m)
+    inside <- ifelse(grepl("[", cn, fixed = TRUE), sub("^.*?\\[", "", cn, perl = TRUE), "")
+    ix <- lapply(regmatches(inside, gregexpr("[0-9]+", inside)), function(v) as.numeric(c(v, 0, 0)[1:2]))
+    m[, order(sub("\\[.*$", "", cn), sapply(ix, `[`, 1), sapply(ix, `[`, 2)), drop = FALSE]
   })
   list(chains = ch, iteration = iter_all[sel], burnin = (first - 1) * chunk_iter)
 }
@@ -194,7 +198,6 @@ Cmodel <- compileNimble(model)
 Cmcmc <- compileNimble(buildMCMC(conf), project = model)
 log_msg("Compiled %s model: %s (w = %s)", top$Type, top$Covariates, paste(w_mask, collapse = ""))
 
-#   
 # ---- Chunked sampling ----
 for (k in 1:max_chunks) {
   Cmcmc$run(chunk_iter, reset = (k == 1), resetMV = TRUE, progressBar = FALSE)

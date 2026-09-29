@@ -165,26 +165,50 @@ cat(sprintf("  Saved Spatial Covariate Correlation Heatmap: %s\n", png_cor))
 # ------------------------------------------------------------------------
 # 3. Full Candidate Model Selection Master Table
 # ------------------------------------------------------------------------
-cat("\n[3/4] Generating Full Candidate Model Selection Master Table...\n")
+cat("\n[3/4] Generating Model Selection Table (Delta_wAIC < 2 models)...\n")
 
+# Only the Delta_wAIC < 2 models are reported. wAIC / Delta_wAIC / Weight are the original
+# model-selection record (Final_Model_Comparison.csv). Posterior summaries come from the converged
+# 3-chain re-runs (Master_Model_Convergence_Summary.csv), not from the stale CI_* / beta quantile
+# columns of Final_Model_Comparison.csv. The re-scored WAIC (compute_waic_posthoc.R) is added
+# alongside, because the original wAIC for some species came from an earlier code version.
 if (file.exists("Results/Final_Model_Comparison.csv")) {
-  full_model_df <- read.csv("Results/Final_Model_Comparison.csv", stringsAsFactors = FALSE)
-  
-  # Format & Sort
-  full_model_df <- full_model_df %>%
+  sel_df <- read.csv("Results/Final_Model_Comparison.csv", stringsAsFactors = FALSE) %>%
+    filter(Delta_wAIC < 2) %>%
     arrange(Species, Rank) %>%
-    mutate(
-      wAIC = round(wAIC, 2),
-      Delta_wAIC = round(Delta_wAIC, 2),
-      Model_Weight = round(exp(-0.5 * Delta_wAIC) / sum(exp(-0.5 * Delta_wAIC)), 4)
-    )
-  
-  out_csv_full <- "Results/tables/Full_Candidate_Model_Selection_Summary.csv"
-  out_xlsx_full <- "Results/tables/Full_Candidate_Model_Selection_Summary.xlsx"
-  
-  write.csv(full_model_df, out_csv_full, row.names = FALSE)
-  write_xlsx(list("Full_Model_Selection" = full_model_df), out_xlsx_full)
-  cat(sprintf("  Saved Full Candidate Model Selection Table: %s & %s\n", out_csv_full, out_xlsx_full))
+    group_by(Species) %>%
+    mutate(Weight_within_Delta2 = exp(-0.5 * Delta_wAIC) / sum(exp(-0.5 * Delta_wAIC))) %>% # within species
+    ungroup() %>%
+    select(Species, Rank, Type, Covariates, wAIC, Delta_wAIC, Weight_all_candidates = Weight, Weight_within_Delta2)
+
+  master_sel <- read.csv("Results/model_summary/Master_Model_Convergence_Summary.csv", stringsAsFactors = FALSE) %>%
+    select(Species, Rank, Total_Abundance_Mean, Total_Abundance_SD, Total_Abundance_95_CI, Overall_Convergence)
+  sel_df <- sel_df %>% left_join(master_sel, by = c("Species", "Rank"))
+
+  waic_file <- "Results/tables/WAIC_Rerun_Comparison.csv"
+  if (file.exists(waic_file)) {
+    wr <- read.csv(waic_file, stringsAsFactors = FALSE) %>%
+      select(Species, Rank = Old_Rank, Rescored_WAIC = New_wAIC, Rescored_Delta_within_Delta2 = New_Delta_within_rerun)
+    sel_df <- sel_df %>% left_join(wr, by = c("Species", "Rank"))
+  }
+  sel_df <- sel_df %>% mutate(across(c(wAIC, Delta_wAIC, Rescored_WAIC, Rescored_Delta_within_Delta2), ~ round(.x, 2)),
+                              across(c(Weight_all_candidates, Weight_within_Delta2), ~ round(.x, 4)))
+
+  note_df <- data.frame(Note = c(
+    "Rows: models with Delta_wAIC < 2 in Final_Model_Comparison.csv (the original model-selection record).",
+    "wAIC, Delta_wAIC, Weight_all_candidates: original selection runs; Weight_within_Delta2: renormalised within species.",
+    "Total_Abundance_*: converged 3-chain re-runs (see model_summary/Rerun_MCMC_Settings.csv).",
+    "Rescored_WAIC: WAIC recomputed from the re-run samples with the current code (tables/WAIC_Rerun_Comparison.csv).",
+    "For Sambar deer and Muntjac the original wAIC came from an earlier data-preparation/model code version and differs",
+    "from Rescored_WAIC by about 40-100 units; the two columns are not comparable with each other."))
+
+  out_csv_sel <- "Results/tables/Model_Selection_Delta2_Summary.csv"
+  out_xlsx_sel <- "Results/tables/Model_Selection_Delta2_Summary.xlsx"
+  write.csv(sel_df, out_csv_sel, row.names = FALSE)
+  write_xlsx(list("Model_Selection_Delta2" = sel_df, "Notes" = note_df), out_xlsx_sel)
+  # superseded: the old table listed all candidates with stale posterior columns and cross-species weights
+  unlink(c("Results/tables/Full_Candidate_Model_Selection_Summary.csv", "Results/tables/Full_Candidate_Model_Selection_Summary.xlsx"))
+  cat(sprintf("  Saved Model Selection Table: %s & %s\n", out_csv_sel, out_xlsx_sel))
 }
 
 # ------------------------------------------------------------------------
@@ -236,7 +260,7 @@ for (i in 1:nrow(master_summary)) {
             CI_95_Lower = round(ci_l, 3),
             CI_95_Upper = round(ci_u, 3),
             Effect_Direction = dir_str,
-            Inclusion = "Active in Model (w = 1.0)",
+            Inclusion = "In model (fixed covariate set; not estimated)",
             stringsAsFactors = FALSE
           )
         }
